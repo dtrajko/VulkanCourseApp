@@ -15,6 +15,7 @@ int VulkanRenderer::init(GLFWwindow* newWindow)
 	try
 	{
 		createInstance();
+		getPhysicalDevice();
 	}
 	catch (const std::runtime_error &e)
 	{
@@ -91,6 +92,33 @@ void VulkanRenderer::createInstance()
 	}
 }
 
+void VulkanRenderer::getPhysicalDevice()
+{
+	// Enumerate Physical Devices the vkInstance can access
+	uint32_t deviceCount = 0;
+
+	vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
+
+	// If no devices available, then none support Vulkan!
+	if (deviceCount == 0)
+	{
+		throw std::runtime_error("Can't find GPUs that support Vulkan Instance!");
+	}
+
+	// Get list of Physical Devices
+	std::vector<VkPhysicalDevice> deviceList(deviceCount);
+	vkEnumeratePhysicalDevices(instance, &deviceCount, deviceList.data());
+
+	for (const auto& device : deviceList)
+	{
+		if (checkDeviceSuitable(device))
+		{
+			mainDevice.physicalDevice = device;
+			break;
+		}
+	}	
+}
+
 bool VulkanRenderer::checkInstanceExtensionSupport(std::vector<const char*>* checkExtensions)
 {
 	// Need to get number of extensions to create array of correct size to hold extensions
@@ -121,4 +149,56 @@ bool VulkanRenderer::checkInstanceExtensionSupport(std::vector<const char*>* che
 	}
 
 	return true;
+}
+
+bool VulkanRenderer::checkDeviceSuitable(VkPhysicalDevice device)
+{
+	/*
+	// Information about the device itself (ID, name, type, verdor, etc)
+	VkPhysicalDeviceProperties deviceProperties;
+	vkGetPhysicalDeviceProperties(device, &deviceProperties);
+
+	// Information about what the device can do (get shader, tess shader, wide lines, etc)
+	VkPhysicalDeviceFeatures deviceFeatures;
+	vkGetPhysicalDeviceFeatures(device, &deviceFeatures);
+	*/
+
+	QueueFamilyIndices indices = getQueueFamilies(device);
+
+	return indices.isValid();
+}
+
+QueueFamilyIndices VulkanRenderer::getQueueFamilies(VkPhysicalDevice device)
+{
+	QueueFamilyIndices indices;
+
+	// Get all Queue Family Property info for the given device
+	uint32_t queueFamilyCount;
+	vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
+
+	std::vector<VkQueueFamilyProperties> queueFamilyList(queueFamilyCount);
+	vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilyList.data());
+
+	// Go through each queue family and check if it has at least 1 of the required types of queue
+	int i = 0;
+	for (const auto& queueFamily : queueFamilyList)
+	{
+		// First check if queue family has at least 1 queue in that family (could have no queues)
+		// Queue can be multiple types defined through bitfield.
+		// Need to bitwise AND with VK_QUEUE_*_BIT to check if has required type
+		if (queueFamily.queueCount > 0 && queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT)
+		{
+			indices.graphicsFamily = i; // If queue family is valid, then get index
+		}
+
+		// Check if queue family indices are in a valid state, stop searching if so
+		if (indices.isValid())
+		{
+			break;
+		}
+
+		i++;
+	}
+
+	return indices;
 }
