@@ -26,11 +26,12 @@ private:
 		VkPhysicalDevice physicalDevice;
 		VkDevice logicalDevice;
 	} mainDevice;
-
+	VkQueue graphicsQueue;
 
 	// Vulkan Functions
 	// -- Create Functions
 	void createInstance();
+	void createLogicalDevice();
 
 	// -- Get Functions
 	void getPhysicalDevice();
