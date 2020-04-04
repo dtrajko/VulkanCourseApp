@@ -55,3 +55,15 @@ static VkResult CreateDebugReportCallbackEXT(VkInstance instance, const VkDebugR
 		return VK_ERROR_EXTENSION_NOT_PRESENT;
 	}
 }
+
+static void DestroyDebugReportCallbackEXT(VkInstance instance, VkDebugReportCallbackEXT callback, const VkAllocationCallbacks* pAllocator)
+{
+	// Get function pointer to requested function, then cast to function pointer for vkDestroyDebugReportCallbackEXT
+	auto func = (PFN_vkDestroyDebugReportCallbackEXT)vkGetInstanceProcAddr(instance, "vkDestroyDebugReportCallbackEXT");
+
+	// If function found - execute
+	if (func != nullptr)
+	{
+		func(instance, callback, pAllocator);
+	}
+}
