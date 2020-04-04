@@ -28,12 +28,15 @@ private:
 		VkDevice logicalDevice;
 	} mainDevice;
 	VkQueue graphicsQueue;
+	VkQueue presentationQueue;
+	VkSurfaceKHR surface;
 
 	// Vulkan Functions
 	// -- Create Functions
 	void createInstance();
 	void createDebugCallback();
 	void createLogicalDevice();
+	void createSurface();
 
 	// -- Get Functions
 	void getPhysicalDevice();
@@ -41,6 +44,7 @@ private:
 	// -- Support Functions
 	// -- -- Checker Functions
 	bool checkInstanceExtensionSupport(std::vector<const char*>* checkExtensions);
+	bool checkDeviceExtensionSupport(VkPhysicalDevice device);
 	bool checkValidationLayerSupport();
 	bool checkDeviceSuitable(VkPhysicalDevice device);
 
