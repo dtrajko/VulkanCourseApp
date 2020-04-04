@@ -1,5 +1,7 @@
 #include "VulkanRenderer.h"
 
+#include "VulkanValidation.h"
+
 #include <stdexcept>
 
 
@@ -15,6 +17,7 @@ int VulkanRenderer::init(GLFWwindow* newWindow)
 	try
 	{
 		createInstance();
+		createDebugCallback();
 		getPhysicalDevice();
 		createLogicalDevice();
 	}
@@ -39,6 +42,11 @@ VulkanRenderer::~VulkanRenderer()
 
 void VulkanRenderer::createInstance()
 {
+	if (validationEnabled && !checkValidationLayerSupport())
+	{
+		throw std::runtime_error("Required Validation Layers not supported!");
+	}
+
 	// Information about the application itself
 	// Most data here doesn't affect the program and is for developer convenience
 	VkApplicationInfo appInfo = {};
@@ -72,6 +80,12 @@ void VulkanRenderer::createInstance()
 		instanceExtensions.push_back(glfwExtensions[i]);
 	}
 
+	// If validation enabled, add extension to report validation debug info
+	if (validationEnabled)
+	{
+		instanceExtensions.push_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
+	}
+
 	// Check Instance Extensions supported
 	if (!checkInstanceExtensionSupport(&instanceExtensions))
 	{
@@ -81,9 +95,17 @@ void VulkanRenderer::createInstance()
 	createInfo.enabledExtensionCount = static_cast<uint32_t>(instanceExtensions.size());
 	createInfo.ppEnabledExtensionNames = instanceExtensions.data();
 
-	// TODO: Set up Validation Layers that Instance will use
-	createInfo.enabledLayerCount = 0;
-	createInfo.ppEnabledLayerNames = nullptr;
+	// Set up Validation Layers that Instance will use
+	if (validationEnabled)
+	{
+		createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
+		createInfo.ppEnabledLayerNames = validationLayers.data();
+	}
+	else
+	{
+		createInfo.enabledLayerCount = 0;
+		createInfo.ppEnabledLayerNames = nullptr;
+	}
 
 	// Create Instance
 	VkResult result = vkCreateInstance(&createInfo, nullptr, &instance);
@@ -91,6 +113,24 @@ void VulkanRenderer::createInstance()
 	if (result != VK_SUCCESS)
 	{
 		throw std::runtime_error("Failed to create a Vulkan Instance!");
+	}
+}
+
+void VulkanRenderer::createDebugCallback()
+{
+	// Only create callback if validation enabled
+	if (!validationEnabled) return;
+
+	VkDebugReportCallbackCreateInfoEXT callbackCreateInfo = {};
+	callbackCreateInfo.sType = VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT;
+	callbackCreateInfo.flags = VK_DEBUG_REPORT_ERROR_BIT_EXT | VK_DEBUG_REPORT_WARNING_BIT_EXT; // Which validation reports should initiate callback
+	callbackCreateInfo.pfnCallback = debugCallback; // Pointer to callback function itself
+
+	// Create debug callback with custom create function
+	VkResult result = CreateDebugReportCallbackEXT(instance, &callbackCreateInfo, nullptr, &callback);
+	if (result != VK_SUCCESS)
+	{
+		throw std::runtime_error("Failed to create Debug Callback!");
 	}
 }
 
@@ -177,7 +217,7 @@ bool VulkanRenderer::checkInstanceExtensionSupport(std::vector<const char*>* che
 		bool hasExtension = false;
 		for (const auto& extension : extensions)
 		{
-			if (strcmp(checkExtension, extension.extensionName))
+			if (strcmp(checkExtension, extension.extensionName) == 0)
 			{
 				hasExtension = true;
 				break;
@@ -185,6 +225,43 @@ bool VulkanRenderer::checkInstanceExtensionSupport(std::vector<const char*>* che
 		}
 
 		if (!hasExtension)
+		{
+			return false;
+		}
+	}
+
+	return true;
+}
+
+bool VulkanRenderer::checkValidationLayerSupport()
+{
+	// Get number of validation layers to create vector of appropriate size
+	uint32_t validationLayerCount;
+	vkEnumerateInstanceLayerProperties(&validationLayerCount, nullptr);
+
+	// Check if no validation layers found AND we want at least 1 layer
+	if (validationLayerCount == 0 && validationLayers.size() > 0)
+	{
+		return false;
+	}
+
+	std::vector<VkLayerProperties> availableLayers(validationLayerCount);
+	vkEnumerateInstanceLayerProperties(&validationLayerCount, availableLayers.data());
+
+	// Check if given Validation Layer is in list of given Validation Layers
+	for (const auto& validationLayer : validationLayers)
+	{
+		bool hasLayer = false;
+		for (const auto& availableLayer : availableLayers)
+		{
+			if (strcmp(validationLayer, availableLayer.layerName) == 0)
+			{
+				hasLayer = true;
+				break;
+			}
+		}
+
+		if (!hasLayer)
 		{
 			return false;
 		}

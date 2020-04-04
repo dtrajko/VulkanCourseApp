@@ -21,6 +21,7 @@ private:
 
 	// Vulkan Components
 	VkInstance instance;
+	VkDebugReportCallbackEXT callback;
 	struct
 	{
 		VkPhysicalDevice physicalDevice;
@@ -31,6 +32,7 @@ private:
 	// Vulkan Functions
 	// -- Create Functions
 	void createInstance();
+	void createDebugCallback();
 	void createLogicalDevice();
 
 	// -- Get Functions
@@ -39,6 +41,7 @@ private:
 	// -- Support Functions
 	// -- -- Checker Functions
 	bool checkInstanceExtensionSupport(std::vector<const char*>* checkExtensions);
+	bool checkValidationLayerSupport();
 	bool checkDeviceSuitable(VkPhysicalDevice device);
 
 	// -- Getter Functions
