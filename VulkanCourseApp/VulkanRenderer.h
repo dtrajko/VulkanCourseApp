@@ -34,6 +34,9 @@ private:
 	VkSwapchainKHR swapchain;
 	std::vector<SwapchainImage> swapChainImages;
 
+	// -- Pipeline
+	VkPipelineLayout pipelineLayout;
+
 	// -- Utility
 	VkFormat swapChainImageFormat;
 	VkExtent2D swapChainExtent;
