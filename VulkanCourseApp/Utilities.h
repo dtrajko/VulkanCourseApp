@@ -3,6 +3,7 @@
 #include <vector>
 #include <fstream>
 
+const int MAX_FRAME_DRAWS = 2;
 
 const std::vector<const char*> deviceExtensions =
 {
