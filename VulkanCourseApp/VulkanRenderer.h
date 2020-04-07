@@ -13,6 +13,7 @@ class VulkanRenderer
 public:
 	VulkanRenderer();
 	int init(GLFWwindow* newWindow);
+	void draw();
 	void cleanup();
 	~VulkanRenderer();
 
@@ -48,6 +49,9 @@ private:
 	VkFormat swapChainImageFormat;
 	VkExtent2D swapChainExtent;
 
+	// -- Synchronization
+	VkSemaphore imageAvailable;
+	VkSemaphore renderFinished;
 
 	// Vulkan Functions
 	// -- Create Functions
@@ -87,5 +91,6 @@ private:
 	// -- Create Functions
 	VkImageView createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags);
 	VkShaderModule createShaderModule(const std::vector<char> &code);
+	void createSynchronization();
 
 };

@@ -30,6 +30,7 @@ int VulkanRenderer::init(GLFWwindow* newWindow)
 		createCommandPool();
 		createCommandBuffers();
 		recordCommands();
+		createSynchronization();
 	}
 	catch (const std::runtime_error &e)
 	{
@@ -40,8 +41,63 @@ int VulkanRenderer::init(GLFWwindow* newWindow)
 	return EXIT_SUCCESS;
 }
 
+void VulkanRenderer::draw()
+{
+	// -- 1. GET NEXT IMAGE --
+	// Get index of next image to be drawn to, and signal semaphore when ready to be drawn to
+	// Get next available image to draw to and set something to signal when we're finished with the image (a semaphore)
+	uint32_t imageIndex;
+	vkAcquireNextImageKHR(mainDevice.logicalDevice, swapchain, std::numeric_limits<uint64_t>::max(), imageAvailable, VK_NULL_HANDLE, &imageIndex);
+
+	// -- 2. SUBMIT COMMAND BUFFER TO RENDER
+	// Queue submission information
+	// Submit command buffer to queue for execution, making sure it waits for image to be signalled as available before drawing
+	VkSubmitInfo submitInfo = {};
+	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+	submitInfo.waitSemaphoreCount = 1;            // Number of semaphores to wait on
+	submitInfo.pWaitSemaphores = &imageAvailable; // List of semaphores to wait on
+	VkPipelineStageFlags waitStages[] =
+	{
+		VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+	};
+	submitInfo.pWaitDstStageMask = waitStages;    // Stages to check semaphores at
+	submitInfo.commandBufferCount = 1; // Number of command buffers to submit
+	submitInfo.pCommandBuffers = &commandBuffers[imageIndex]; // Command buffer to submit
+	submitInfo.signalSemaphoreCount = 1; // Number of semaphores to signal
+	submitInfo.pSignalSemaphores = &renderFinished; // List of semaphores to signal when command buffer finishes
+
+	// Submit command buffer to queue
+	VkResult result = vkQueueSubmit(graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
+	if (result != VK_SUCCESS)
+	{
+		throw std::runtime_error("Failed to submit a Command Buffer to Queue!");
+	}
+
+	// -- 3. PRESENT RENDERED IMAGE TO SCREEN
+	// Present image to screen when it has signalled finished rendering
+	//    and signals when it has finished rendering
+	VkPresentInfoKHR presentInfo = {};
+	presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+	presentInfo.waitSemaphoreCount = 1; // Number of semaphores to wait on
+	presentInfo.pWaitSemaphores = &renderFinished; // List of semaphores to wait on
+	presentInfo.swapchainCount = 1; // Number of swapchains to present to
+	presentInfo.pSwapchains = &swapchain; // List of swapchains to present to
+	presentInfo.pImageIndices = &imageIndex; // Index of images in swapchain to present
+
+	// Present image
+	result = vkQueuePresentKHR(presentationQueue, &presentInfo);
+	if (result != VK_SUCCESS)
+	{
+		throw std::runtime_error("Failed to present Image!");
+	}
+
+
+}
+
 void VulkanRenderer::cleanup()
 {
+	vkDestroySemaphore(mainDevice.logicalDevice, imageAvailable, nullptr);
+	vkDestroySemaphore(mainDevice.logicalDevice, renderFinished, nullptr);
 	vkDestroyCommandPool(mainDevice.logicalDevice, graphicsCommandPool, nullptr);
 	for (auto framebuffer : swapChainFramebuffers)
 	{
@@ -1092,4 +1148,27 @@ VkShaderModule VulkanRenderer::createShaderModule(const std::vector<char>& code)
 	printf("Vulkan Shader Module successfully created.\n");
 
 	return shaderModule;
+}
+
+void VulkanRenderer::createSynchronization()
+{
+	// Semaphore creation information
+	VkSemaphoreCreateInfo semaphoreCreateInfo = {};
+	semaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+
+	VkResult result;
+
+	result = vkCreateSemaphore(mainDevice.logicalDevice, &semaphoreCreateInfo, nullptr, &imageAvailable);
+	if (result != VK_SUCCESS)
+	{
+		throw std::runtime_error("Failed to create a Semaphore ['imageAvailable']!");
+	}
+	printf("Vulkan Semaphore ['imageAvailable'] successfully created.\n");
+
+	result = vkCreateSemaphore(mainDevice.logicalDevice, &semaphoreCreateInfo, nullptr, &renderFinished);
+	if (result != VK_SUCCESS)
+	{
+		throw std::runtime_error("Failed to create a Semaphore ['renderFinished']!");
+	}
+	printf("Vulkan Semaphore ['renderFinished'] successfully created.\n");
 }
