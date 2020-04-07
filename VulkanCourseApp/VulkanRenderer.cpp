@@ -43,6 +43,12 @@ int VulkanRenderer::init(GLFWwindow* newWindow)
 
 void VulkanRenderer::draw()
 {
+	// CPU/GPU synchronization
+	// Wait for given fence to signal (open) from last draw before continuing
+	vkWaitForFences(mainDevice.logicalDevice, 1, &drawFences[currentFrame], VK_TRUE, std::numeric_limits<uint64_t>::max());
+	// Manually reset (clpse) fences
+	vkResetFences(mainDevice.logicalDevice, 1, &drawFences[currentFrame]);
+
 	// -- 1. GET NEXT IMAGE --
 	// Get index of next image to be drawn to, and signal semaphore when ready to be drawn to
 	// Get next available image to draw to and set something to signal when we're finished with the image (a semaphore)
@@ -67,7 +73,7 @@ void VulkanRenderer::draw()
 	submitInfo.pSignalSemaphores = &renderFinished[currentFrame]; // List of semaphores to signal when command buffer finishes
 
 	// Submit command buffer to queue
-	VkResult result = vkQueueSubmit(graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
+	VkResult result = vkQueueSubmit(graphicsQueue, 1, &submitInfo, drawFences[currentFrame]);
 	if (result != VK_SUCCESS)
 	{
 		throw std::runtime_error("Failed to submit a Command Buffer to Queue!");
@@ -104,6 +110,7 @@ void VulkanRenderer::cleanup()
 	{
 		vkDestroySemaphore(mainDevice.logicalDevice, imageAvailable[i], nullptr);
 		vkDestroySemaphore(mainDevice.logicalDevice, renderFinished[i], nullptr);
+		vkDestroyFence(mainDevice.logicalDevice, drawFences[i], nullptr);
 	}
 	vkDestroyCommandPool(mainDevice.logicalDevice, graphicsCommandPool, nullptr);
 	for (auto framebuffer : swapChainFramebuffers)
@@ -733,8 +740,6 @@ void VulkanRenderer::recordCommands()
 	// Information about how to begin each command buffer
 	VkCommandBufferBeginInfo bufferBeginInfo = {};
 	bufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-	bufferBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT; // Buffer can be resubmitted when it has already been submitted 
-	                                                                      // and is awaiting execution
 
 	// Information about how to begin a render pass (only needed for graphical applications)
 	VkRenderPassBeginInfo renderPassBeginInfo = {};
@@ -1129,10 +1134,10 @@ VkImageView VulkanRenderer::createImageView(VkImage image, VkFormat format, VkIm
 
 	if (result != VK_SUCCESS)
 	{
-		throw std::runtime_error("Failed to create an Image View!");
+		throw std::runtime_error("Failed to create an ImageView!");
 	}
 
-	printf("Vulkan Image View successfully created.\n");
+	printf("Vulkan ImageView successfully created.\n");
 
 	return imageView;
 }
@@ -1161,10 +1166,16 @@ void VulkanRenderer::createSynchronization()
 {
 	imageAvailable.resize(MAX_FRAME_DRAWS);
 	renderFinished.resize(MAX_FRAME_DRAWS);
+	drawFences.resize(MAX_FRAME_DRAWS);
 
 	// Semaphore creation information
 	VkSemaphoreCreateInfo semaphoreCreateInfo = {};
 	semaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+
+	// Fence creation information
+	VkFenceCreateInfo fenceCreateInfo = {};
+	fenceCreateInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+	fenceCreateInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
 	VkResult result;
 
@@ -1175,13 +1186,20 @@ void VulkanRenderer::createSynchronization()
 		{
 			throw std::runtime_error("Failed to create a Semaphore ['imageAvailable']!");
 		}
-		printf("Vulkan Semaphore ['imageAvailable'] successfully created.\n");
+		printf("Vulkan Semaphore imageAvailable[%zu] successfully created.\n", i);
 
 		result = vkCreateSemaphore(mainDevice.logicalDevice, &semaphoreCreateInfo, nullptr, &renderFinished[i]);
 		if (result != VK_SUCCESS)
 		{
 			throw std::runtime_error("Failed to create a Semaphore ['renderFinished']!");
 		}
-		printf("Vulkan Semaphore ['renderFinished'] successfully created.\n");
+		printf("Vulkan Semaphore renderFinished[%zu] successfully created.\n", i);
+
+		result = vkCreateFence(mainDevice.logicalDevice, &fenceCreateInfo, nullptr, &drawFences[i]);
+		if (result != VK_SUCCESS)
+		{
+			throw std::runtime_error("Failed to create a Fence!");
+		}
+		printf("Vulkan Fence drawFences[%zu] successfully created.\n", i);
 	}
 }
