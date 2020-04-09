@@ -27,9 +27,13 @@ int VulkanRenderer::init(GLFWwindow* newWindow)
 		// Create a mesh
 		std::vector<Vertex> meshVertices =
 		{
-			{{ 0.0f, -0.4f, 0.0f }},
-			{{ 0.4f,  0.4f, 0.0f }},
-			{{-0.4f,  0.4f, 0.0f }},
+			{{ 0.4f, -0.4f, 0.0f }, { 1.0f, 0.0f, 0.0f }},
+			{{ 0.4f,  0.4f, 0.0f }, { 0.0f, 1.0f, 0.0f }},
+			{{-0.4f,  0.4f, 0.0f }, { 0.0f, 0.0f, 1.0f }},
+
+			{{-0.4f,  0.4f, 0.0f }, { 0.0f, 0.0f, 1.0f }},
+			{{-0.4f, -0.4f, 0.0f }, { 1.0f, 1.0f, 0.0f }},
+			{{ 0.4f, -0.4f, 0.0f }, { 1.0f, 0.0f, 0.0f }},
 		};
 		firstMesh = Mesh(mainDevice.physicalDevice, mainDevice.logicalDevice, &meshVertices);
 
@@ -522,13 +526,19 @@ void VulkanRenderer::createGraphicsPipeline()
 	                                                            // VK_VERTEX_INPUT_RATE_VERTEX   : Move on to the next vertex
 	                                                            // VK_VERTEX_INPUT_RATE_INSTANCE : Move to a vertex for the next instance
 	// How the data for an attribute is defined within a vertex
-	std::array<VkVertexInputAttributeDescription, 1> attributeDescriptions;
+	std::array<VkVertexInputAttributeDescription, 2> attributeDescriptions;
 
 	// Position attribute
 	attributeDescriptions[0].binding = 0;  // Which binding the data is at (should be same as above)
 	attributeDescriptions[0].location = 0; // Location in shader where data will be read from
 	attributeDescriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT; // Format the data will take (also helps define size of data)
 	attributeDescriptions[0].offset = offsetof(Vertex, pos); // Where this attribute is defined in the data for a single vertex
+
+	// Color attribute
+	attributeDescriptions[1].binding = 0;  // Which binding the data is at (should be same as above)
+	attributeDescriptions[1].location = 1; // Location in shader where data will be read from
+	attributeDescriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT; // Format the data will take (also helps define size of data)
+	attributeDescriptions[1].offset = offsetof(Vertex, col); // Where this attribute is defined in the data for a single vertex
 
 	// -- VERTEX INPUT --
 	VkPipelineVertexInputStateCreateInfo vertexInputCreateInfo = {};
@@ -811,7 +821,7 @@ void VulkanRenderer::recordCommands()
 				vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, vertexBuffers, offsets); // Command to bind vertex buffer before drawing with them
 
 				// Execute pipeline
-				vkCmdDraw(commandBuffers[i], 3, 1, 0, 0);
+				vkCmdDraw(commandBuffers[i], static_cast<uint32_t>(firstMesh.getVertexCount()), 1, 0, 0);
 
 				// Bind vertices
 				// vkCmdDraw - another draw command for different geometry

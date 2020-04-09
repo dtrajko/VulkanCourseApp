@@ -13,7 +13,7 @@ Mesh::Mesh(VkPhysicalDevice newPhysicalDevice, VkDevice newDevice, std::vector<V
 	vertexCount = (int)vertices->size();
 	physicalDevice = newPhysicalDevice;
 	device = newDevice;
-	vertexBuffer = createVertexBuffer(vertices);
+	createVertexBuffer(vertices);
 }
 
 int Mesh::getVertexCount()
@@ -36,7 +36,7 @@ Mesh::~Mesh()
 {
 }
 
-VkBuffer Mesh::createVertexBuffer(std::vector<Vertex>* vertices)
+void Mesh::createVertexBuffer(std::vector<Vertex>* vertices)
 {
 	// Information to create a buffer (doesn't include assigning memory)
 	VkBufferCreateInfo bufferInfo = {};
@@ -84,8 +84,6 @@ VkBuffer Mesh::createVertexBuffer(std::vector<Vertex>* vertices)
 	vkMapMemory(device, vertexBufferMemory, 0, bufferInfo.size, 0, &data); // 2. "Map" the vertex buffer memory to that point
 	memcpy(data, vertices->data(), (size_t)bufferInfo.size);               // 3. Copy memory from vertices vector to the point
 	vkUnmapMemory(device, vertexBufferMemory);                             // 4. Unmap the vertex buffer memory
-
-	return vertexBuffer;
 }
 
 uint32_t Mesh::findMemoryTypeIndex(uint32_t allowedTypes, VkMemoryPropertyFlags properties)
@@ -103,4 +101,8 @@ uint32_t Mesh::findMemoryTypeIndex(uint32_t allowedTypes, VkMemoryPropertyFlags 
 			return i;
 		}
 	}
+
+	throw std::runtime_error("Failed to find Memory Type Index!");
+
+	return 0;
 }
