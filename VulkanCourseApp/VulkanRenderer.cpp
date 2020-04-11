@@ -31,7 +31,7 @@ int VulkanRenderer::init(GLFWwindow* newWindow)
 		createCommandPool();
 
 		mvp.projection = glm::perspective(glm::radians(45.0f), (float)swapChainExtent.width / (float)swapChainExtent.height, 0.1f, 100.f);
-		mvp.view = glm::lookAt(glm::vec3(3.0f, 1.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+		mvp.view = glm::lookAt(glm::vec3(0.0f, 0.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 		mvp.model = glm::mat4(1.0f);
 
 		// Vulkan inverts Y axis
@@ -84,6 +84,11 @@ int VulkanRenderer::init(GLFWwindow* newWindow)
 	return EXIT_SUCCESS;
 }
 
+void VulkanRenderer::updateModel(glm::mat4 newModel)
+{
+	mvp.model = newModel;
+}
+
 void VulkanRenderer::draw()
 {
 	// CPU/GPU synchronization
@@ -97,6 +102,8 @@ void VulkanRenderer::draw()
 	// Get next available image to draw to and set something to signal when we're finished with the image (a semaphore)
 	uint32_t imageIndex;
 	vkAcquireNextImageKHR(mainDevice.logicalDevice, swapchain, std::numeric_limits<uint64_t>::max(), imageAvailable[currentFrame], VK_NULL_HANDLE, &imageIndex);
+
+	updateUniformBuffer(imageIndex);
 
 	// -- 2. SUBMIT COMMAND BUFFER TO RENDER
 	// Queue submission information
@@ -933,6 +940,14 @@ void VulkanRenderer::createDescriptorSets()
 	}
 }
 
+void VulkanRenderer::updateUniformBuffer(uint32_t imageIndex)
+{
+	void* data;
+	vkMapMemory(mainDevice.logicalDevice, uniformBufferMemory[imageIndex], 0, sizeof(MVP), 0, &data);
+	memcpy(data, &mvp, sizeof(MVP));
+	vkUnmapMemory(mainDevice.logicalDevice, uniformBufferMemory[imageIndex]);
+}
+
 void VulkanRenderer::recordCommands()
 {
 	// Information about how to begin each command buffer
@@ -1152,15 +1167,22 @@ bool VulkanRenderer::checkValidationLayerSupport()
 
 bool VulkanRenderer::checkDeviceSuitable(VkPhysicalDevice device)
 {
-	/*
 	// Information about the device itself (ID, name, type, verdor, etc)
 	VkPhysicalDeviceProperties deviceProperties;
 	vkGetPhysicalDeviceProperties(device, &deviceProperties);
 
+	printf("deviceProperties.deviceName: %s\n", deviceProperties.deviceName);
+	printf("deviceProperties.limits.maxBoundDescriptorSets: %i\n", deviceProperties.limits.maxBoundDescriptorSets);
+	printf("deviceProperties.limits.maxColorAttachments: %i\n", deviceProperties.limits.maxColorAttachments);
+	printf("deviceProperties.limits.maxDescriptorSetUniformBuffers: %i\n", deviceProperties.limits.maxDescriptorSetUniformBuffers);
+	printf("deviceProperties.limits.maxDescriptorSetUniformBuffersDynamic: %i\n", deviceProperties.limits.maxDescriptorSetUniformBuffersDynamic);
+	printf("deviceProperties.limits.maxFramebufferWidth: %i\n", deviceProperties.limits.maxFramebufferWidth);
+	printf("deviceProperties.limits.maxFramebufferHeight: %i\n", deviceProperties.limits.maxFramebufferHeight);
+	printf("deviceProperties.limits.maxFramebufferLayers: %i\n", deviceProperties.limits.maxFramebufferLayers);
+
 	// Information about what the device can do (get shader, tess shader, wide lines, etc)
 	VkPhysicalDeviceFeatures deviceFeatures;
 	vkGetPhysicalDeviceFeatures(device, &deviceFeatures);
-	*/
 
 	QueueFamilyIndices indices = getQueueFamilies(device);
 

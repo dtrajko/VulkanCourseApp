@@ -17,6 +17,7 @@ class VulkanRenderer
 public:
 	VulkanRenderer();
 	int init(GLFWwindow* newWindow);
+	void updateModel(glm::mat4 newModel);
 	void draw();
 	void cleanup();
 	~VulkanRenderer();
@@ -98,6 +99,8 @@ private:
 	void createUniformBuffers();
 	void createDescriptorPool();
 	void createDescriptorSets();
+
+	void updateUniformBuffer(uint32_t imageIndex);
 
 	// -- Record Functions --
 	void recordCommands();
