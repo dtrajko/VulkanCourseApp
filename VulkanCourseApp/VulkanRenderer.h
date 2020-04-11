@@ -31,12 +31,11 @@ private:
 	std::vector<Mesh> meshList;
 
 	// Scene Settings
-	struct MVP
+	struct UboViewProjection
 	{
 		glm::mat4 projection;
 		glm::mat4 view;
-		glm::mat4 model;
-	} mvp;
+	} uboViewProjection;
 
 	// Vulkan Components
 	// -- Main
@@ -62,8 +61,15 @@ private:
 	VkDescriptorPool descriptorPool;
 	std::vector<VkDescriptorSet> descriptorSets;
 
-	std::vector<VkBuffer> uniformBuffer;
-	std::vector<VkDeviceMemory> uniformBufferMemory;
+	std::vector<VkBuffer> vpUniformBuffer;
+	std::vector<VkDeviceMemory> vpUniformBufferMemory;
+
+	std::vector<VkBuffer> modelDynUniformBuffer;
+	std::vector<VkDeviceMemory> modelDynUniformBufferMemory;
+
+	VkDeviceSize minUniformBufferOffset;
+	size_t modelUniformAlignment;
+	UboModel* modelTransferSpace;
 
 	// -- Pipeline
 	VkPipeline graphicsPipeline;
@@ -107,6 +113,9 @@ private:
 
 	// -- Get Functions
 	void getPhysicalDevice();
+
+	// -- Allocate Functions
+	void allocateDynamicBufferTransferSpace();
 
 	// -- Support Functions
 	// -- -- Checker Functions
