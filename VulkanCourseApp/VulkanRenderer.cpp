@@ -40,18 +40,18 @@ int VulkanRenderer::init(GLFWwindow* newWindow)
 		// Vertex data
 		std::vector<Vertex> meshVertices =
 		{
-			{{-0.1f, -0.4f, 0.0f }, { 1.0f, 0.0f, 0.0f }}, // 0
-			{{-0.1f,  0.4f, 0.0f }, { 0.0f, 1.0f, 0.0f }}, // 1
-			{{-0.9f,  0.4f, 0.0f }, { 0.0f, 0.0f, 1.0f }}, // 2
-			{{-0.9f, -0.4f, 0.0f }, { 1.0f, 1.0f, 0.0f }}, // 3
+			{{-0.4f,  0.4f, 0.0f }, { 1.0f, 0.0f, 0.0f }}, // 0
+			{{-0.4f, -0.4f, 0.0f }, { 0.0f, 1.0f, 0.0f }}, // 1
+			{{ 0.4f, -0.4f, 0.0f }, { 0.0f, 0.0f, 1.0f }}, // 2
+			{{ 0.4f,  0.4f, 0.0f }, { 1.0f, 1.0f, 0.0f }}, // 3
 		};
 
 		std::vector<Vertex> meshVertices2 =
 		{
-			{{ 0.9f, -0.4f, 0.0f }, { 1.0f, 0.0f, 0.0f }}, // 0
-			{{ 0.9f,  0.4f, 0.0f }, { 0.0f, 1.0f, 0.0f }}, // 1
-			{{ 0.1f,  0.4f, 0.0f }, { 0.0f, 0.0f, 1.0f }}, // 2
-			{{ 0.1f, -0.4f, 0.0f }, { 1.0f, 1.0f, 0.0f }}, // 3
+			{{ -0.25f,  0.6f, 0.0f }, { 1.0f, 0.0f, 0.0f }}, // 0
+			{{ -0.25f, -0.6f, 0.0f }, { 0.0f, 1.0f, 0.0f }}, // 1
+			{{  0.25f, -0.6f, 0.0f }, { 0.0f, 0.0f, 1.0f }}, // 2
+			{{  0.25f,  0.6f, 0.0f }, { 1.0f, 1.0f, 0.0f }}, // 3
 		};
 
 		// Index data
@@ -68,6 +68,7 @@ int VulkanRenderer::init(GLFWwindow* newWindow)
 		meshList.push_back(secondMesh);
 
 		createCommandBuffers();
+		allocateDynamicBufferTransferSpace();
 		createUniformBuffers();
 		createDescriptorPool();
 		createDescriptorSets();
@@ -83,9 +84,11 @@ int VulkanRenderer::init(GLFWwindow* newWindow)
 	return EXIT_SUCCESS;
 }
 
-void VulkanRenderer::updateModel(glm::mat4 newModel)
+void VulkanRenderer::updateModel(int modelId, glm::mat4 newModel)
 {
-	// uboViewProjection.model = newModel;
+	if (modelId >= meshList.size()) return;
+
+	meshList[modelId].setModel(newModel);
 }
 
 void VulkanRenderer::draw()
@@ -159,14 +162,11 @@ void VulkanRenderer::cleanup()
 
 	vkDestroyDescriptorPool(mainDevice.logicalDevice, descriptorPool, nullptr);
 	vkDestroyDescriptorSetLayout(mainDevice.logicalDevice, descriptorSetLayout, nullptr);
-	for (size_t i = 0; i < vpUniformBuffer.size(); i++)
+	for (size_t i = 0; i < swapChainImages.size(); i++)
 	{
 		vkDestroyBuffer(mainDevice.logicalDevice, vpUniformBuffer[i], nullptr);
 		vkFreeMemory(mainDevice.logicalDevice, vpUniformBufferMemory[i], nullptr);
-	}
 
-	for (size_t i = 0; i < modelDynUniformBuffer.size(); i++)
-	{
 		vkDestroyBuffer(mainDevice.logicalDevice, modelDynUniformBuffer[i], nullptr);
 		vkFreeMemory(mainDevice.logicalDevice, modelDynUniformBufferMemory[i], nullptr);
 	}
@@ -998,14 +998,23 @@ void VulkanRenderer::createDescriptorSets()
 
 void VulkanRenderer::updateUniformBuffers(uint32_t imageIndex)
 {
-	// Copy VP data (UboViewProjection)
+	// Copy ViewProjection data (UboViewProjection)
 	void* data;
 	vkMapMemory(mainDevice.logicalDevice, vpUniformBufferMemory[imageIndex], 0, sizeof(UboViewProjection), 0, &data);
 	memcpy(data, &uboViewProjection, sizeof(UboViewProjection));
 	vkUnmapMemory(mainDevice.logicalDevice, vpUniformBufferMemory[imageIndex]);
 
 	// Copy Model data (UboModel)
+	for (size_t i = 0; i < meshList.size(); i++)
+	{
+		UboModel* thisModel = (UboModel*)((uint64_t)modelTransferSpace + (i * modelUniformAlignment));
+		*thisModel = meshList[i].getModel();
+	}
 
+	// Map the list of model data
+	vkMapMemory(mainDevice.logicalDevice, modelDynUniformBufferMemory[imageIndex], 0, modelUniformAlignment * meshList.size(), 0, &data);
+	memcpy(data, modelTransferSpace, modelUniformAlignment * meshList.size());
+	vkUnmapMemory(mainDevice.logicalDevice, modelDynUniformBufferMemory[imageIndex]);
 }
 
 void VulkanRenderer::recordCommands()
@@ -1125,16 +1134,15 @@ void VulkanRenderer::getPhysicalDevice()
 	vkGetPhysicalDeviceProperties(mainDevice.physicalDevice, &deviceProperties);
 
 	minUniformBufferOffset = deviceProperties.limits.minUniformBufferOffsetAlignment;
-	allocateDynamicBufferTransferSpace();
 }
 
 void VulkanRenderer::allocateDynamicBufferTransferSpace()
 {
 	// 0000000100000000 256
+	// 0000000001000000 64
 	// 0000000011111111 256-1
 	// 1111111100000000 ~(256-1) mask for all possible values
-	// 0000000001000000 64
-	// 0000000000000000 64 & ~(256-1)
+	// 0000000100000000 (64+256-1) & ~(256-1)
 
 	// Calculate alignment of model data
 	modelUniformAlignment = (sizeof(UboModel) + minUniformBufferOffset - 1)
