@@ -31,8 +31,13 @@ int VulkanRenderer::init(GLFWwindow* newWindow)
 		createGraphicsPipeline();
 		createFramebuffers();
 		createCommandPool();
-
-		int firstTexture = createTextureImage("giraffe.jpg");
+		createCommandBuffers();
+		createTextureSampler();
+		// allocateDynamicBufferTransferSpace();
+		createUniformBuffers();
+		createDescriptorPool();
+		createDescriptorSets();
+		createSynchronization();
 
 		uboViewProjection.projection = glm::perspective(glm::radians(45.0f), (float)swapChainExtent.width / (float)swapChainExtent.height, 0.1f, 100.f);
 		uboViewProjection.view = glm::lookAt(glm::vec3(0.0f, 0.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
@@ -44,18 +49,18 @@ int VulkanRenderer::init(GLFWwindow* newWindow)
 		// Vertex data
 		std::vector<Vertex> meshVertices =
 		{
-			{{-0.5f,  0.5f, 0.0f }, { 1.0f, 1.0f, 0.0f }}, // 0
-			{{-0.5f, -0.5f, 0.0f }, { 1.0f, 0.0f, 0.0f }}, // 1
-			{{ 0.5f, -0.5f, 0.0f }, { 1.0f, 0.0f, 0.0f }}, // 2
-			{{ 0.5f,  0.5f, 0.0f }, { 1.0f, 1.0f, 0.0f }}, // 3
+			{ {-0.5f,  0.5f, 0.0f }, { 1.0f, 1.0f, 0.0f }, { 1.0f, 1.0f } }, // 0
+			{ {-0.5f, -0.5f, 0.0f }, { 1.0f, 0.0f, 0.0f }, { 1.0f, 0.0f } }, // 1
+			{ { 0.5f, -0.5f, 0.0f }, { 1.0f, 0.0f, 0.0f }, { 0.0f, 0.0f } }, // 2
+			{ { 0.5f,  0.5f, 0.0f }, { 1.0f, 1.0f, 0.0f }, { 0.0f, 1.0f } }, // 3
 		};
 
 		std::vector<Vertex> meshVertices2 =
 		{
-			{{-0.5f,  0.5f, 0.0f }, { 0.0f, 1.0f, 0.0f }}, // 0
-			{{-0.5f, -0.5f, 0.0f }, { 0.0f, 0.0f, 1.0f }}, // 1
-			{{ 0.5f, -0.5f, 0.0f }, { 0.0f, 0.0f, 1.0f }}, // 2
-			{{ 0.5f,  0.5f, 0.0f }, { 0.0f, 1.0f, 0.0f }}, // 3
+			{ {-0.5f,  0.5f, 0.0f }, { 0.0f, 1.0f, 0.0f }, { 1.0f, 1.0f } }, // 0
+			{ {-0.5f, -0.5f, 0.0f }, { 0.0f, 0.0f, 1.0f }, { 1.0f, 0.0f } }, // 1
+			{ { 0.5f, -0.5f, 0.0f }, { 0.0f, 0.0f, 1.0f }, { 0.0f, 0.0f } }, // 2
+			{ { 0.5f,  0.5f, 0.0f }, { 0.0f, 1.0f, 0.0f }, { 0.0f, 1.0f } }, // 3
 		};
 
 		// Index data
@@ -65,19 +70,13 @@ int VulkanRenderer::init(GLFWwindow* newWindow)
 			2, 3, 0,
 		};
 
-		Mesh firstMesh = Mesh(mainDevice.physicalDevice, mainDevice.logicalDevice, graphicsQueue, graphicsCommandPool, &meshVertices, &meshIndices);
+		Mesh firstMesh = Mesh(mainDevice.physicalDevice, mainDevice.logicalDevice, graphicsQueue, graphicsCommandPool,
+			&meshVertices, &meshIndices, createTexture("giraffe.jpg"));
 		meshList.push_back(firstMesh);
 
-		Mesh secondMesh = Mesh(mainDevice.physicalDevice, mainDevice.logicalDevice, graphicsQueue, graphicsCommandPool, &meshVertices2, &meshIndices);
+		Mesh secondMesh = Mesh(mainDevice.physicalDevice, mainDevice.logicalDevice, graphicsQueue, graphicsCommandPool,
+			&meshVertices2, &meshIndices, createTexture("panda.jpg"));
 		meshList.push_back(secondMesh);
-
-		createCommandBuffers();
-		createTextureSampler();
-		// allocateDynamicBufferTransferSpace();
-		createUniformBuffers();
-		createDescriptorPool();
-		createDescriptorSets();
-		createSynchronization();
 	}
 	catch (const std::runtime_error &e)
 	{
@@ -186,6 +185,7 @@ void VulkanRenderer::cleanup()
 	vkDestroyDescriptorPool(mainDevice.logicalDevice, samplerDescriptorPool, nullptr);
 	vkDestroyDescriptorSetLayout(mainDevice.logicalDevice, descriptorSetLayout, nullptr);
 	vkDestroyDescriptorSetLayout(mainDevice.logicalDevice, samplerSetLayout, nullptr);
+
 	for (size_t i = 0; i < swapChainImages.size(); i++)
 	{
 		vkDestroyBuffer(mainDevice.logicalDevice, vpUniformBuffer[i], nullptr);
@@ -697,19 +697,25 @@ void VulkanRenderer::createGraphicsPipeline()
 	                                                            // VK_VERTEX_INPUT_RATE_VERTEX   : Move on to the next vertex
 	                                                            // VK_VERTEX_INPUT_RATE_INSTANCE : Move to a vertex for the next instance
 	// How the data for an attribute is defined within a vertex
-	std::array<VkVertexInputAttributeDescription, 2> attributeDescriptions;
+	std::array<VkVertexInputAttributeDescription, 3> attributeDescriptions;
 
 	// Position attribute
-	attributeDescriptions[0].binding = 0;  // Which binding the data is at (should be same as above)
-	attributeDescriptions[0].location = 0; // Location in shader where data will be read from
+	attributeDescriptions[0].binding = 0;                         // Which binding the data is at (should be same as above)
+	attributeDescriptions[0].location = 0;                        // Location in shader where data will be read from
 	attributeDescriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT; // Format the data will take (also helps define size of data)
-	attributeDescriptions[0].offset = offsetof(Vertex, pos); // Where this attribute is defined in the data for a single vertex
+	attributeDescriptions[0].offset = offsetof(Vertex, pos);      // Where this attribute is defined in the data for a single vertex
 
 	// Color attribute
-	attributeDescriptions[1].binding = 0;  // Which binding the data is at (should be same as above)
-	attributeDescriptions[1].location = 1; // Location in shader where data will be read from
-	attributeDescriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT; // Format the data will take (also helps define size of data)
-	attributeDescriptions[1].offset = offsetof(Vertex, col); // Where this attribute is defined in the data for a single vertex
+	attributeDescriptions[1].binding = 0;
+	attributeDescriptions[1].location = 1;
+	attributeDescriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
+	attributeDescriptions[1].offset = offsetof(Vertex, col);
+
+	// Texture Coords attribute
+	attributeDescriptions[2].binding = 0;
+	attributeDescriptions[2].location = 2;
+	attributeDescriptions[2].format = VK_FORMAT_R32G32_SFLOAT;
+	attributeDescriptions[2].offset = offsetof(Vertex, tex);
 
 	// -- VERTEX INPUT --
 	VkPipelineVertexInputStateCreateInfo vertexInputCreateInfo = {};
@@ -1220,9 +1226,15 @@ void VulkanRenderer::recordCommands(uint32_t currentImage)
 					&meshList[j].getModel() // Actual data being pushed (can be array)
 				);
 
-				// Bind Descriptor Sets (Uniform Buffers)
-				vkCmdBindDescriptorSets(commandBuffers[currentImage], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1,
-					&descriptorSets[currentImage], dynamicOffsetCount, dynamicOffsetPointer);
+				std::array<VkDescriptorSet, 2> descriptorSetGroup =
+				{
+					descriptorSets[currentImage],
+					samplerDescriptorSets[meshList[j].getTexId()]
+				};
+
+				// Bind Descriptor Sets (Uniform Buffers and Texture Samplers)
+				vkCmdBindDescriptorSets(commandBuffers[currentImage], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0,
+					static_cast<uint32_t>(descriptorSetGroup.size()), descriptorSetGroup.data(), dynamicOffsetCount, dynamicOffsetPointer);
 
 				// Execute pipeline
 				// vkCmdDraw(commandBuffers[i], static_cast<uint32_t>(firstMesh.getVertexCount()), 1, 0, 0);
