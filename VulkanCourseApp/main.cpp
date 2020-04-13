@@ -14,7 +14,7 @@ GLFWwindow* window;
 VulkanRenderer vulkanRenderer;
 
 
-void initWindow(std::string wName = "Test Window", const int width = 1280, const int height = 720)
+void initWindow(std::string wName = "Vulkan Renderer", const int width = 1280, const int height = 720)
 {
 	// Initialize GLFW
 	glfwInit();
@@ -29,7 +29,7 @@ void initWindow(std::string wName = "Test Window", const int width = 1280, const
 int main()
 {
 	// Create Window
-	initWindow("Text Window", 1280, 720);
+	initWindow("Vulkan Renderer", 1366, 768);
 
 	// Create VulkanRenderer instance
 	if (vulkanRenderer.init(window) == EXIT_FAILURE)
