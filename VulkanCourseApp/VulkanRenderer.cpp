@@ -2,6 +2,10 @@
 
 #include "VulkanValidation.h"
 
+#include "assimp/Importer.hpp"
+#include "assimp/scene.h"
+#include "assimp/postprocess.h"
+
 #include <stdexcept>
 #include <set>
 #include <algorithm>
@@ -1926,6 +1930,27 @@ int VulkanRenderer::createTextureDescriptor(VkImageView textureImage)
 
 	// Return Descriptor Set location
 	return (int)samplerDescriptorSets.size() - 1;
+}
+
+void VulkanRenderer::createMeshModel(std::string modelFile)
+{
+	// Import model "scene"
+	Assimp::Importer importer;
+	const aiScene* scene = importer.ReadFile(modelFile,
+		aiProcess_Triangulate |
+		aiProcess_FlipUVs |
+		aiProcess_JoinIdenticalVertices);
+
+	if (!scene)
+	{
+		throw std::runtime_error("Failed to load model! (" + modelFile + ")");
+	}
+
+	// Get vector of all materials with 1:1 ID placement
+	std::vector<std::string> textureNames;
+
+
+
 }
 
 stbi_uc* VulkanRenderer::loadTextureFile(std::string fileName, int* width, int* height, VkDeviceSize* imageSize)

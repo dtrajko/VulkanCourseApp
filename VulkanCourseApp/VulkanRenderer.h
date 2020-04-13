@@ -10,6 +10,7 @@
 
 #include "Utilities.h"
 #include "Mesh.h"
+#include "MeshModel.h"
 
 #include <vector>
 
@@ -85,6 +86,7 @@ private:
 	// Model* modelTransferSpace;
 
 	// -- Assets
+	std::vector<MeshModel> modelList;
 	std::vector<VkImage> textureImages;
 	std::vector<VkDeviceMemory> textureImageMemory;
 	std::vector<VkImageView> textureImageViews;
@@ -165,6 +167,8 @@ private:
 	int createTextureImage(std::string fileName);
 	int createTexture(std::string fileName);
 	int createTextureDescriptor(VkImageView textureImage);
+
+	void createMeshModel(std::string modelFile);
 
 	// -- Loader Functions
 	stbi_uc* loadTextureFile(std::string fileName, int* width, int* height, VkDeviceSize* imageSize);
