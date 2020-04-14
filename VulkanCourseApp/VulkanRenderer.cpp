@@ -43,51 +43,14 @@ int VulkanRenderer::init(GLFWwindow* newWindow)
 		createDescriptorSets();
 		createSynchronization();
 
-		uboViewProjection.projection = glm::perspective(glm::radians(45.0f), (float)swapChainExtent.width / (float)swapChainExtent.height, 0.1f, 200.f);
-		uboViewProjection.view = glm::lookAt(glm::vec3(60.0f, 100.0f, 160.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+		uboViewProjection.projection = glm::perspective(glm::radians(45.0f), (float)swapChainExtent.width / (float)swapChainExtent.height, 0.1f, 100.f);
+		uboViewProjection.view = glm::lookAt(glm::vec3(0.0f, 25.0f, 50.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 
 		// Vulkan inverts Y axis
 		uboViewProjection.projection[1][1] *= -1;
 
-		// Create a mesh
-		// Vertex data
-		std::vector<Vertex> meshVertices =
-		{
-			{ {-0.5f,  0.5f, 0.0f }, { 1.0f, 1.0f, 0.0f }, { 1.0f, 1.0f } }, // 0
-			{ {-0.5f, -0.5f, 0.0f }, { 1.0f, 0.0f, 0.0f }, { 1.0f, 0.0f } }, // 1
-			{ { 0.5f, -0.5f, 0.0f }, { 1.0f, 0.0f, 0.0f }, { 0.0f, 0.0f } }, // 2
-			{ { 0.5f,  0.5f, 0.0f }, { 1.0f, 1.0f, 0.0f }, { 0.0f, 1.0f } }, // 3
-		};
-
-		std::vector<Vertex> meshVertices2 =
-		{
-			{ {-0.5f,  0.5f, 0.0f }, { 0.0f, 1.0f, 0.0f }, { 1.0f, 1.0f } }, // 0
-			{ {-0.5f, -0.5f, 0.0f }, { 0.0f, 0.0f, 1.0f }, { 1.0f, 0.0f } }, // 1
-			{ { 0.5f, -0.5f, 0.0f }, { 0.0f, 0.0f, 1.0f }, { 0.0f, 0.0f } }, // 2
-			{ { 0.5f,  0.5f, 0.0f }, { 0.0f, 1.0f, 0.0f }, { 0.0f, 1.0f } }, // 3
-		};
-
-		// Index data
-		std::vector<uint32_t> meshIndices =
-		{
-			0, 1, 2,
-			2, 3, 0,
-		};
-
-		int defaultTextureID = createTexture("plain.png");
-
-		Mesh firstMesh = Mesh(mainDevice.physicalDevice, mainDevice.logicalDevice, graphicsQueue, graphicsCommandPool,
-			&meshVertices, &meshIndices, createTexture("giraffe.jpg"));
-		meshList.push_back(firstMesh);
-
-		Mesh secondMesh = Mesh(mainDevice.physicalDevice, mainDevice.logicalDevice, graphicsQueue, graphicsCommandPool,
-			&meshVertices2, &meshIndices, createTexture("panda.jpg"));
-		meshList.push_back(secondMesh);
-
-		createMeshModel("Models/Seahawk.obj");
-
-		glm::mat4 testMat = glm::rotate(glm::mat4(1.0f), glm::radians(-60.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-		modelList[0].setModel(testMat);
+		// Create our default "no texture" texture
+		createTexture("plain.png");
 	}
 	catch (const std::runtime_error &e)
 	{
@@ -100,9 +63,9 @@ int VulkanRenderer::init(GLFWwindow* newWindow)
 
 void VulkanRenderer::updateModel(int modelId, glm::mat4 newModel)
 {
-	if (modelId >= meshList.size()) return;
+	if (modelId >= modelList.size()) return;
 
-	meshList[modelId].setModel(newModel);
+	modelList[modelId].setModel(newModel);
 }
 
 void VulkanRenderer::draw()
@@ -211,12 +174,6 @@ void VulkanRenderer::cleanup()
 		// vkDestroyBuffer(mainDevice.logicalDevice, modelDynUniformBuffer[i], nullptr);
 		// vkFreeMemory(mainDevice.logicalDevice, modelDynUniformBufferMemory[i], nullptr);
 	}
-
-	for (auto& mesh : meshList)
-	{
-		mesh.destroyBuffers();
-	}
-	meshList.clear();
 
 	for (size_t i = 0; i < MAX_FRAME_DRAWS; i++)
 	{

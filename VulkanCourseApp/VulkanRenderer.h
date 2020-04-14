@@ -20,6 +20,7 @@ class VulkanRenderer
 public:
 	VulkanRenderer();
 	int init(GLFWwindow* newWindow);
+	void createMeshModel(std::string modelFile);
 	void updateModel(int modelId, glm::mat4 newModel);
 	void draw();
 	void cleanup();
@@ -31,7 +32,7 @@ private:
 	int currentFrame = 0;
 
 	// Scene Objects
-	std::vector<Mesh> meshList;
+	std::vector<MeshModel> modelList;
 
 	// Scene Settings
 	struct UboViewProjection
@@ -86,7 +87,6 @@ private:
 	// Model* modelTransferSpace;
 
 	// -- Assets
-	std::vector<MeshModel> modelList;
 	std::vector<VkImage> textureImages;
 	std::vector<VkDeviceMemory> textureImageMemory;
 	std::vector<VkImageView> textureImageViews;
@@ -167,8 +167,6 @@ private:
 	int createTextureImage(std::string fileName);
 	int createTexture(std::string fileName);
 	int createTextureDescriptor(VkImageView textureImage);
-
-	void createMeshModel(std::string modelFile);
 
 	// -- Loader Functions
 	stbi_uc* loadTextureFile(std::string fileName, int* width, int* height, VkDeviceSize* imageSize);
