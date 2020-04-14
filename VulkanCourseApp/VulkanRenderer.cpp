@@ -44,7 +44,7 @@ int VulkanRenderer::init(GLFWwindow* newWindow)
 		createSynchronization();
 
 		uboViewProjection.projection = glm::perspective(glm::radians(45.0f), (float)swapChainExtent.width / (float)swapChainExtent.height, 0.1f, 100.f);
-		uboViewProjection.view = glm::lookAt(glm::vec3(0.0f, 25.0f, 50.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+		uboViewProjection.view = glm::lookAt(glm::vec3(0.0f, 35.0f, 40.0f), glm::vec3(0.0f, 15.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 
 		// Vulkan inverts Y axis
 		uboViewProjection.projection[1][1] *= -1;
@@ -157,9 +157,12 @@ void VulkanRenderer::cleanup()
 		vkDestroyImageView(mainDevice.logicalDevice, textureImageViews[i], nullptr);
 	}
 
-	vkDestroyImageView(mainDevice.logicalDevice, depthBufferImageView, nullptr);
-	vkDestroyImage(mainDevice.logicalDevice, depthBufferImage, nullptr);
-	vkFreeMemory(mainDevice.logicalDevice, depthBufferImageMemory, nullptr);
+	for (size_t i = 0; i < depthBufferImages.size(); i++)
+	{
+		vkDestroyImageView(mainDevice.logicalDevice, depthBufferImageViews[i], nullptr);
+		vkDestroyImage(mainDevice.logicalDevice, depthBufferImages[i], nullptr);
+		vkFreeMemory(mainDevice.logicalDevice, depthBufferImageMemory[i], nullptr);
+	}
 
 	vkDestroyDescriptorPool(mainDevice.logicalDevice, descriptorPool, nullptr);
 	vkDestroyDescriptorPool(mainDevice.logicalDevice, samplerDescriptorPool, nullptr);
@@ -854,21 +857,28 @@ void VulkanRenderer::createGraphicsPipeline()
 
 void VulkanRenderer::createDepthBufferImage()
 {
+	depthBufferImages.resize(swapChainImages.size());
+	depthBufferImageMemory.resize(swapChainImages.size());
+	depthBufferImageViews.resize(swapChainImages.size());
+
 	// Get supported format for depth buffer
 	depthBufferImageFormat = chooseSupportedFormat(
 		{ VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D32_SFLOAT, VK_FORMAT_D24_UNORM_S8_UINT },
 		VK_IMAGE_TILING_OPTIMAL,
 		VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
 
-	// Create Depth Buffer Image
-	depthBufferImage = createImage(swapChainExtent.width, swapChainExtent.height, depthBufferImageFormat,
-		VK_IMAGE_TILING_OPTIMAL,
-		VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
-		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-		&depthBufferImageMemory);
+	for (size_t i = 0; i < swapChainImages.size(); i++)
+	{
+		// Create Depth Buffer Image
+		depthBufferImages[i] = createImage(swapChainExtent.width, swapChainExtent.height, depthBufferImageFormat,
+			VK_IMAGE_TILING_OPTIMAL,
+			VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
+			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+			&depthBufferImageMemory[i]);
 
-	// Create Depth Buffer Image View
-	depthBufferImageView = createImageView(depthBufferImage, depthBufferImageFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
+		// Create Depth Buffer Image View
+		depthBufferImageViews[i] = createImageView(depthBufferImages[i], depthBufferImageFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
+	}
 }
 
 void VulkanRenderer::createFramebuffers()
@@ -882,7 +892,7 @@ void VulkanRenderer::createFramebuffers()
 		std::array<VkImageView, 2> attachments =
 		{
 			swapChainImages[i].imageView,
-			depthBufferImageView,
+			depthBufferImageViews[i],
 		};
 
 		VkFramebufferCreateInfo framebufferCreateInfo = {};
