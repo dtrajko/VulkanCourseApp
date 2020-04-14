@@ -44,7 +44,7 @@ int VulkanRenderer::init(GLFWwindow* newWindow)
 		createSynchronization();
 
 		uboViewProjection.projection = glm::perspective(glm::radians(45.0f), (float)swapChainExtent.width / (float)swapChainExtent.height, 0.1f, 100.f);
-		uboViewProjection.view = glm::lookAt(glm::vec3(0.0f, 35.0f, 40.0f), glm::vec3(0.0f, 15.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+		uboViewProjection.view = glm::lookAt(glm::vec3(0.0f, 25.0f, 25.0f), glm::vec3(0.0f, 10.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 
 		// Vulkan inverts Y axis
 		uboViewProjection.projection[1][1] *= -1;

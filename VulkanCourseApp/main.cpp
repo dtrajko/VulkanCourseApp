@@ -41,7 +41,7 @@ int main()
 	float deltaTime = 0.0f;
 	float lastTime = 0.0f;
 
-	int modelID = vulkanRenderer.createMeshModel("Models/nanosuit.obj");
+	int modelID = vulkanRenderer.createMeshModel("Models/cyborg.obj");
 
 	// Loop until closed
 	while (!glfwWindowShouldClose(window))
@@ -58,7 +58,7 @@ int main()
 		glm::mat4 modelMatrix(1.0f);
 		modelMatrix = glm::translate(modelMatrix, glm::vec3(0.0f, 0.0f, 0.0f));
 		modelMatrix = glm::rotate(modelMatrix, glm::radians(angle), glm::vec3(0.0f, 1.0f, 0.0f));
-		modelMatrix = glm::scale(modelMatrix, glm::vec3(2.0f));
+		modelMatrix = glm::scale(modelMatrix, glm::vec3(5.0f));
 
 		vulkanRenderer.updateModel(modelID, modelMatrix);
 
