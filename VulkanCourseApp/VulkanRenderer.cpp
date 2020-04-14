@@ -1911,7 +1911,7 @@ int VulkanRenderer::createTextureDescriptor(VkImageView textureImage)
 	return (int)samplerDescriptorSets.size() - 1;
 }
 
-void VulkanRenderer::createMeshModel(std::string modelFile)
+int VulkanRenderer::createMeshModel(std::string modelFile)
 {
 	// Import model "scene"
 	Assimp::Importer importer;
@@ -1954,6 +1954,8 @@ void VulkanRenderer::createMeshModel(std::string modelFile)
 	// Create mesh model and add to list
 	MeshModel meshModel = MeshModel(modelMeshes);
 	modelList.push_back(meshModel);
+
+	return (int)modelList.size() - 1;
 }
 
 stbi_uc* VulkanRenderer::loadTextureFile(std::string fileName, int* width, int* height, VkDeviceSize* imageSize)

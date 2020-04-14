@@ -41,7 +41,7 @@ int main()
 	float deltaTime = 0.0f;
 	float lastTime = 0.0f;
 
-	vulkanRenderer.createMeshModel("Models/Seahawk.obj");
+	int modelID = vulkanRenderer.createMeshModel("Models/Seahawk.obj");
 
 	// Loop until closed
 	while (!glfwWindowShouldClose(window))
@@ -55,13 +55,12 @@ int main()
 		angle += 20.0f * deltaTime;
 		if (angle > 360.0f) { angle -= 360.0f; }
 
-		glm::mat4 firstModel(1.0f);
+		glm::mat4 modelMatrix(1.0f);
+		modelMatrix = glm::translate(modelMatrix, glm::vec3(0.0f, 0.0f, 0.0f));
+		modelMatrix = glm::rotate(modelMatrix, glm::radians(angle), glm::vec3(0.0f, 1.0f, 0.0f));
+		modelMatrix = glm::scale(modelMatrix, glm::vec3(0.2f));
 
-		firstModel = glm::translate(firstModel, glm::vec3(0.0f, 0.0f, 0.0f));
-		firstModel = glm::rotate(firstModel, glm::radians(angle), glm::vec3(0.0f, 1.0f, 0.0f));
-		firstModel = glm::scale(firstModel, glm::vec3(0.2f));
-
-		vulkanRenderer.updateModel(0, firstModel);
+		vulkanRenderer.updateModel(modelID, modelMatrix);
 
 		vulkanRenderer.draw();
 	}
