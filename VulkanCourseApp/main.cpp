@@ -41,7 +41,8 @@ int main()
 	float deltaTime = 0.0f;
 	float lastTime = 0.0f;
 
-	int modelID = vulkanRenderer.createMeshModel("Models/cyborg.obj");
+	int meshId1 = vulkanRenderer.createMeshModel("Models/cyborg.obj");
+	int meshId2 = vulkanRenderer.createMeshModel("Models/cyborg.obj");
 
 	// Loop until closed
 	while (!glfwWindowShouldClose(window))
@@ -55,12 +56,18 @@ int main()
 		angle += 20.0f * deltaTime;
 		if (angle > 360.0f) { angle -= 360.0f; }
 
-		glm::mat4 modelMatrix(1.0f);
-		modelMatrix = glm::translate(modelMatrix, glm::vec3(0.0f, 0.0f, 0.0f));
-		modelMatrix = glm::rotate(modelMatrix, glm::radians(angle), glm::vec3(0.0f, 1.0f, 0.0f));
-		modelMatrix = glm::scale(modelMatrix, glm::vec3(5.0f));
+		glm::mat4 modelMat1(1.0f);
+		modelMat1 = glm::translate(modelMat1, glm::vec3(-9.0f, 0.0f, 0.0f));
+		modelMat1 = glm::rotate(modelMat1, glm::radians(angle), glm::vec3(0.0f, 1.0f, 0.0f));
+		modelMat1 = glm::scale(modelMat1, glm::vec3(5.0f));
 
-		vulkanRenderer.updateModel(modelID, modelMatrix);
+		glm::mat4 modelMat2(1.0f);
+		modelMat2 = glm::translate(modelMat2, glm::vec3(9.0f, 0.0f, 0.0f));
+		modelMat2 = glm::rotate(modelMat2, glm::radians(angle), glm::vec3(0.0f, 1.0f, 0.0f));
+		modelMat2 = glm::scale(modelMat2, glm::vec3(5.0f));
+
+		vulkanRenderer.updateModel(meshId1, modelMat1);
+		vulkanRenderer.updateModel(meshId2, modelMat2);
 
 		vulkanRenderer.draw();
 	}
