@@ -195,18 +195,25 @@ void VulkanRenderer::cleanup()
 		vkDestroySemaphore(mainDevice.logicalDevice, renderFinished[i], nullptr);
 		vkDestroyFence(mainDevice.logicalDevice, drawFences[i], nullptr);
 	}
+
 	vkDestroyCommandPool(mainDevice.logicalDevice, graphicsCommandPool, nullptr);
 	for (auto framebuffer : swapChainFramebuffers)
 	{
 		vkDestroyFramebuffer(mainDevice.logicalDevice, framebuffer, nullptr);
 	}
+
 	vkDestroyPipeline(mainDevice.logicalDevice, graphicsPipeline, nullptr);
 	vkDestroyPipelineLayout(mainDevice.logicalDevice, pipelineLayout, nullptr);
+
+	vkDestroyPipeline(mainDevice.logicalDevice, secondPipeline, nullptr);
+	vkDestroyPipelineLayout(mainDevice.logicalDevice, secondPipelineLayout, nullptr);
+
 	vkDestroyRenderPass(mainDevice.logicalDevice, renderPass, nullptr);
 	for (auto& image : swapChainImages)
 	{
 		vkDestroyImageView(mainDevice.logicalDevice, image.imageView, nullptr);
 	}
+
 	vkDestroySwapchainKHR(mainDevice.logicalDevice, swapchain, nullptr);
 	vkDestroySurfaceKHR(instance, surface, nullptr);
 	vkDestroyDevice(mainDevice.logicalDevice, nullptr);
@@ -905,13 +912,12 @@ void VulkanRenderer::createGraphicsPipeline()
 
 	// Create Pipeline Layout
 	VkResult result = vkCreatePipelineLayout(mainDevice.logicalDevice, &pipelineLayoutCreateInfo, nullptr, &pipelineLayout);
-
 	if (result != VK_SUCCESS)
 	{
-		throw std::runtime_error("Failed to create Pipeline Layout!");
+		throw std::runtime_error("Failed to create Pipeline Layout (1st Subpass)!");
 	}
 
-	printf("Vulkan Pipeline Layout successfully created.\n");
+	printf("Vulkan Pipeline Layout (1st Subpass) successfully created.\n");
 
 	// -- DEPTH STENCIL TESTING --
 	VkPipelineDepthStencilStateCreateInfo depthStencilCreateInfo = {};
@@ -945,17 +951,74 @@ void VulkanRenderer::createGraphicsPipeline()
 
 	// Create Graphics Pipeline
 	result = vkCreateGraphicsPipelines(mainDevice.logicalDevice, VK_NULL_HANDLE, 1, &pipelineCreateInfo, nullptr, &graphicsPipeline);
-
 	if (result != VK_SUCCESS)
 	{
-		throw std::runtime_error("Failed to create a Graphics Pipeline!");
+		throw std::runtime_error("Failed to create a Graphics Pipeline (1st Subpass)!");
 	}
 
-	printf("Vulkan Graphics Pipeline successfully created.\n");
+	printf("Vulkan Graphics Pipeline (1st Subpass) successfully created.\n");
 
 	// Destroy Shader Modules, no longer needed after Pipeline created
 	vkDestroyShaderModule(mainDevice.logicalDevice, fragmentShaderModule, nullptr);
 	vkDestroyShaderModule(mainDevice.logicalDevice, vertexShaderModule,   nullptr);
+
+	// CREATE SECOND SUBPASS PIPELINE
+	// Second subpass shaders
+	auto secondVertexShaderCode   = readFile("Shaders/second_vert.spv");
+	auto secondFragmentShaderCode = readFile("Shaders/second_frag.spv");
+
+	// Build shaders
+	VkShaderModule secondVertexShaderModule   = createShaderModule(secondVertexShaderCode);
+	VkShaderModule secondFragmentShaderModule = createShaderModule(secondFragmentShaderCode);
+
+	// Set new shaders
+	vertexShaderCreateInfo.module = secondVertexShaderModule;
+	fragmentShaderCreateInfo.module = secondFragmentShaderModule;
+
+	VkPipelineShaderStageCreateInfo secondShaderStages[] = { vertexShaderCreateInfo, fragmentShaderCreateInfo };
+
+	// No vertex data for second pass
+	vertexInputCreateInfo.vertexBindingDescriptionCount = 0;
+	vertexInputCreateInfo.pVertexBindingDescriptions = nullptr;
+	vertexInputCreateInfo.vertexAttributeDescriptionCount = 0;
+	vertexInputCreateInfo.pVertexAttributeDescriptions = nullptr;
+
+	// Don't want to write to depth buffer
+	depthStencilCreateInfo.depthWriteEnable = VK_FALSE;
+
+	// Create new pipeline layout
+	VkPipelineLayoutCreateInfo secondPipelineLayoutCreateInfo = {};
+	secondPipelineLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+	secondPipelineLayoutCreateInfo.setLayoutCount = 1;
+	secondPipelineLayoutCreateInfo.pSetLayouts = &inputSetLayout;
+	secondPipelineLayoutCreateInfo.pushConstantRangeCount = 0;
+	secondPipelineLayoutCreateInfo.pPushConstantRanges = nullptr;
+
+	// Create Pipeline Layout (2nd Subpass) 
+	result = vkCreatePipelineLayout(mainDevice.logicalDevice, &secondPipelineLayoutCreateInfo, nullptr, &secondPipelineLayout);
+	if (result != VK_SUCCESS)
+	{
+		throw std::runtime_error("Failed to create Pipeline Layout (2nd Subpass)!");
+	}
+
+	printf("Vulkan Pipeline Layout (2nd Subpass) successfully created.\n");
+
+	pipelineCreateInfo.pStages = secondShaderStages;  // Update second shader stage list
+	pipelineCreateInfo.layout = secondPipelineLayout; // Change pipeline layout for input attachment descriptor sets
+	pipelineCreateInfo.subpass = 1;                   // Use 2nd Subpass (starting at 0)
+
+	// Create second pipeline
+	result = vkCreateGraphicsPipelines(mainDevice.logicalDevice, VK_NULL_HANDLE, 1, &pipelineCreateInfo, nullptr, &secondPipeline);
+	if (result != VK_SUCCESS)
+	{
+		throw std::runtime_error("Failed to create a Graphics Pipeline (2nd Subpass)!");
+	}
+
+	printf("Vulkan Graphics Pipeline (2nd Subpass) successfully created.\n");
+
+	// Destroy second shader modules
+	vkDestroyShaderModule(mainDevice.logicalDevice, secondVertexShaderModule, nullptr);
+	vkDestroyShaderModule(mainDevice.logicalDevice, secondFragmentShaderModule, nullptr);
 }
 
 void VulkanRenderer::createColorBufferImage()
@@ -1002,7 +1065,7 @@ void VulkanRenderer::createDepthBufferImage()
 		// Create Depth Buffer Image
 		depthBufferImages[i] = createImage(swapChainExtent.width, swapChainExtent.height, depthBufferImageFormat,
 			VK_IMAGE_TILING_OPTIMAL,
-			VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
+			VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT,
 			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
 			&depthBufferImageMemory[i]);
 
@@ -1380,9 +1443,10 @@ void VulkanRenderer::recordCommands(uint32_t currentImage)
 	renderPassBeginInfo.renderArea.offset = { 0, 0 };        // Start point of render pass in pixels
 	renderPassBeginInfo.renderArea.extent = swapChainExtent; // Size of region to run render pass on (starting at offset)
 
-	std::array<VkClearValue, 2> clearValues = {};
-	clearValues[0].color = { 0.29f, 0.14f, 0.35f, 1.0f };
-	clearValues[1].depthStencil.depth = 1.0f;
+	std::array<VkClearValue, 3> clearValues = {};
+	clearValues[0].color = { 0.0f, 0.0f, 0.0f, 1.0f };
+	clearValues[1].color = { 0.29f, 0.14f, 0.35f, 1.0f };
+	clearValues[2].depthStencil.depth = 1.0f;
 
 	renderPassBeginInfo.clearValueCount = static_cast<uint32_t>(clearValues.size()); // Count of clear values
 	renderPassBeginInfo.pClearValues = clearValues.data();                           // List of clear values
@@ -1404,7 +1468,9 @@ void VulkanRenderer::recordCommands(uint32_t currentImage)
 		vkCmdBeginRenderPass(commandBuffers[currentImage], &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
 		{
-			// Bind Pipeline to be used in render pass
+			// Start 1st Subpass
+
+			// Bind Pipeline to be used in Render Pass (1st Subpass)
 			vkCmdBindPipeline(commandBuffers[currentImage], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
 
 			for (size_t j = 0; j < modelList.size(); j++)
@@ -1466,6 +1532,20 @@ void VulkanRenderer::recordCommands(uint32_t currentImage)
 			// vkCmdDraw - another draw command for different geometry
 
 			// vkCmdBindPipeline - Bind another pipeline
+		}
+
+		{
+			// Stard 2nd Subpass
+
+			vkCmdNextSubpass(commandBuffers[currentImage], VK_SUBPASS_CONTENTS_INLINE);
+
+			vkCmdBindPipeline(commandBuffers[currentImage], VK_PIPELINE_BIND_POINT_GRAPHICS, secondPipeline);
+
+			// Bind Descriptor Sets (Input Attachment Descriptor Set)
+			vkCmdBindDescriptorSets(commandBuffers[currentImage], VK_PIPELINE_BIND_POINT_GRAPHICS, secondPipelineLayout, 0,
+				1, &inputDescriptorSets[currentImage], 0, nullptr);
+
+			vkCmdDraw(commandBuffers[currentImage], 3, 1, 0, 0);
 		}
 
 		// End Render Pass

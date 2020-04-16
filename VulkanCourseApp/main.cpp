@@ -57,12 +57,12 @@ int main()
 		if (angle > 360.0f) { angle -= 360.0f; }
 
 		glm::mat4 modelMat1(1.0f);
-		modelMat1 = glm::translate(modelMat1, glm::vec3(-9.0f, 0.0f, 0.0f));
+		modelMat1 = glm::translate(modelMat1, glm::vec3(-9.5f, 0.0f, 0.0f));
 		modelMat1 = glm::rotate(modelMat1, glm::radians(angle), glm::vec3(0.0f, 1.0f, 0.0f));
 		modelMat1 = glm::scale(modelMat1, glm::vec3(5.0f));
 
 		glm::mat4 modelMat2(1.0f);
-		modelMat2 = glm::translate(modelMat2, glm::vec3(9.0f, 0.0f, 0.0f));
+		modelMat2 = glm::translate(modelMat2, glm::vec3( 9.5f, 0.0f, 0.0f));
 		modelMat2 = glm::rotate(modelMat2, glm::radians(angle), glm::vec3(0.0f, 1.0f, 0.0f));
 		modelMat2 = glm::scale(modelMat2, glm::vec3(5.0f));
 
