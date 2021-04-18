@@ -16,7 +16,7 @@ public:
 	MeshModel(std::vector<Mesh> newMeshList);
 	size_t getMeshCount();
 	Mesh* getMesh(size_t index);
-	glm::mat4 getModel();
+	glm::mat4& getModel();
 	void setModel(glm::mat4 newModel);
 	void destroyMeshModel();
 	~MeshModel();

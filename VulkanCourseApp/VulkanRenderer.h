@@ -11,6 +11,8 @@
 #include "Utilities.h"
 #include "Mesh.h"
 #include "MeshModel.h"
+#include "Window.h"
+#include "SwapChain.h"
 
 #include <vector>
 
@@ -19,7 +21,7 @@ class VulkanRenderer
 {
 public:
 	VulkanRenderer();
-	int init(GLFWwindow* newWindow);
+	int init(Window* newWindow);
 	int createMeshModel(std::string modelFile);
 	void updateModel(int modelId, glm::mat4 newModel);
 	void draw();
@@ -27,7 +29,10 @@ public:
 	~VulkanRenderer();
 
 private:
-	GLFWwindow* window;
+	Window* m_Window;
+
+	std::unique_ptr<SwapChain> m_SwapChain;
+	Device* m_Device; // lveDevice
 
 	int currentFrame = 0;
 
@@ -141,6 +146,9 @@ private:
 	void createDescriptorPool();
 	void createDescriptorSets();
 	void createInputDescriptorSets();
+
+	void recreateSwapChain();
+	void freeCommandBuffers();
 
 	void updateUniformBuffers(uint32_t imageIndex);
 

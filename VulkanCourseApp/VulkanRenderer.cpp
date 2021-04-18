@@ -1,6 +1,7 @@
 #include "VulkanRenderer.h"
 
 #include "VulkanValidation.h"
+#include "Device.h"
 
 #include "assimp/Importer.hpp"
 #include "assimp/scene.h"
@@ -16,9 +17,9 @@ VulkanRenderer::VulkanRenderer()
 {
 }
 
-int VulkanRenderer::init(GLFWwindow* newWindow)
+int VulkanRenderer::init(Window* newWindow)
 {
-	window = newWindow;
+	m_Window = newWindow;
 
 	try
 	{
@@ -380,7 +381,7 @@ void VulkanRenderer::createLogicalDevice()
 void VulkanRenderer::createSurface()
 {
 	// Create Surface (creates a surface create info struct, runs the create surface function, returns result)
-	VkResult result = glfwCreateWindowSurface(instance, window, nullptr, &surface);
+	VkResult result = glfwCreateWindowSurface(instance, m_Window->getHandle(), nullptr, &surface);
 
 	if (result != VK_SUCCESS)
 	{
@@ -1409,6 +1410,41 @@ void VulkanRenderer::createInputDescriptorSets()
 	}
 }
 
+void VulkanRenderer::recreateSwapChain()
+{
+	auto extent = m_Window->getExtent();
+
+	while (extent.width == 0 || extent.height == 0) {
+		extent = m_Window->getExtent();
+		glfwWaitEvents();
+	}
+
+	vkDeviceWaitIdle(mainDevice.logicalDevice);
+
+	if (m_SwapChain == nullptr) {
+		m_SwapChain = std::make_unique<SwapChain>(m_Device, extent);
+	}
+	else {
+		m_SwapChain = std::make_unique<SwapChain>(m_Device, extent, std::move(m_SwapChain));
+		freeCommandBuffers();
+		createCommandBuffers();
+	}
+
+	// if render pass compatible do nothing else
+	createGraphicsPipeline();
+}
+
+void VulkanRenderer::freeCommandBuffers()
+{
+	vkFreeCommandBuffers(
+		m_Device->device(),
+		m_Device->getCommandPool(),
+		static_cast<uint32_t>(commandBuffers.size()),
+		commandBuffers.data());
+
+	commandBuffers.clear();
+}
+
 void VulkanRenderer::updateUniformBuffers(uint32_t imageIndex)
 {
 	// Copy ViewProjection data (UboViewProjection)
@@ -1889,7 +1925,7 @@ VkExtent2D VulkanRenderer::chooseSwapExtent(const VkSurfaceCapabilitiesKHR& surf
 
 		// Get window size
 		int width, height;
-		glfwGetFramebufferSize(window, &width, &height);
+		glfwGetFramebufferSize(m_Window->getHandle(), &width, &height);
 
 		// Create new extent using window size
 		VkExtent2D newExtent = {};

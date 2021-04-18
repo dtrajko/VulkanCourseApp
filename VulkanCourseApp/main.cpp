@@ -9,21 +9,16 @@
 #include <iostream>
 
 #include "VulkanRenderer.h"
+#include "Window.h"
 
-GLFWwindow* window;
+
 VulkanRenderer vulkanRenderer;
+Window* window;
 
 
 void initWindow(std::string wName = "Vulkan Renderer", const int width = 1280, const int height = 720)
 {
-	// Initialize GLFW
-	glfwInit();
-
-	// Set GLFW to NOT work with OpenGL
-	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-	glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
-
-	window = glfwCreateWindow(width, height, wName.c_str(), nullptr, nullptr);
+	window = new Window(width, height, wName);
 }
 
 int main()
@@ -45,7 +40,7 @@ int main()
 	int meshId2 = vulkanRenderer.createMeshModel("Models/cyborg.obj");
 
 	// Loop until closed
-	while (!glfwWindowShouldClose(window))
+	while (!window->shouldClose())
 	{
 		glfwPollEvents();
 
@@ -75,7 +70,7 @@ int main()
 	vulkanRenderer.cleanup();
 
 	// Destroy GLFW window and stop GLFW
-	glfwDestroyWindow(window);
+	glfwDestroyWindow(window->getHandle());
 	glfwTerminate();
 
 	return EXIT_SUCCESS;
