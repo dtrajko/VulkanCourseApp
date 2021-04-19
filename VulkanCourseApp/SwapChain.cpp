@@ -128,7 +128,7 @@ VkResult SwapChain::submitCommandBuffers(
 
     presentInfo.pImageIndices = imageIndex;
 
-    auto result = vkQueuePresentKHR(m_Device->presentQueue(), &presentInfo);
+    auto result = vkQueuePresentKHR(m_Device->presentationQueue(), &presentInfo);
 
     currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 
@@ -161,9 +161,9 @@ void SwapChain::createSwapChain()
     createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
     QueueFamilyIndicesLve indices = m_Device->findPhysicalQueueFamilies();
-    uint32_t queueFamilyIndices[] = { indices.graphicsFamily, indices.presentFamily };
+    uint32_t queueFamilyIndices[] = { indices.graphicsFamily, indices.presentationFamily };
 
-    if (indices.graphicsFamily != indices.presentFamily) {
+    if (indices.graphicsFamily != indices.presentationFamily) {
         createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
         createInfo.queueFamilyIndexCount = 2;
         createInfo.pQueueFamilyIndices = queueFamilyIndices;

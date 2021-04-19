@@ -49,14 +49,16 @@ private:
 	// -- Main
 	VkInstance instance;
 	VkDebugReportCallbackEXT callback;
-	struct
-	{
-		VkPhysicalDevice physicalDevice;
-		VkDevice logicalDevice;
-	} mainDevice;
-	VkQueue graphicsQueue;
-	VkQueue presentationQueue;
-	VkSurfaceKHR surface;
+
+	// struct
+	// {
+	// 	VkPhysicalDevice physicalDevice;
+	// 	VkDevice logicalDevice;
+	// } mainDevice;
+
+	// VkQueue graphicsQueue;
+	// VkQueue presentationQueue;
+	// VkSurfaceKHR surface;
 	VkSwapchainKHR swapchain;
 
 	std::vector<SwapchainImage> swapChainImages;
@@ -126,8 +128,9 @@ private:
 	// -- Create Functions
 	void createInstance();
 	void createDebugCallback();
-	void createLogicalDevice();
-	void createSurface();
+	// void createLogicalDevice();
+	// void createSurface();
+	void createDevice();
 	void createSwapChain();
 	void createRenderPass();
 	void createDescriptorSetLayout();
@@ -155,7 +158,7 @@ private:
 	void recordCommands(uint32_t currentImage);
 
 	// -- Get Functions
-	void getPhysicalDevice();
+	// void getPhysicalDevice();
 
 	// -- Allocate Functions
 	void allocateDynamicBufferTransferSpace();
@@ -163,13 +166,13 @@ private:
 	// -- Support Functions
 	// -- -- Checker Functions
 	bool checkInstanceExtensionSupport(std::vector<const char*>* checkExtensions);
-	bool checkDeviceExtensionSupport(VkPhysicalDevice device);
+	bool checkDeviceExtensionSupport(); // VkPhysicalDevice device
 	bool checkValidationLayerSupport();
-	bool checkDeviceSuitable(VkPhysicalDevice device);
+	bool checkDeviceSuitable(); // VkPhysicalDevice device
 
 	// -- Getter Functions
-	QueueFamilyIndices getQueueFamilies(VkPhysicalDevice device);
-	SwapChainDetails getSwapChainDetails(VkPhysicalDevice device);
+	QueueFamilyIndices getQueueFamilies(); // VkPhysicalDevice device
+	SwapChainDetails getSwapChainDetails(); // VkPhysicalDevice device
 
 	// -- Choose Functions
 	VkSurfaceFormatKHR chooseBestSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& formats);
