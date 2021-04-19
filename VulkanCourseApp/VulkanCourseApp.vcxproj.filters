@@ -27,13 +27,19 @@
     <ClCompile Include="MeshModel.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Window.cpp">
+    <ClCompile Include="WindowLVE.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="SwapChain.cpp">
+    <ClCompile Include="SwapChainLVE.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Device.cpp">
+    <ClCompile Include="DeviceLVE.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="PipelineLVE.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Shader.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -53,13 +59,19 @@
     <ClInclude Include="MeshModel.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Window.h">
+    <ClInclude Include="WindowLVE.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="SwapChain.h">
+    <ClInclude Include="SwapChainLVE.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Device.h">
+    <ClInclude Include="DeviceLVE.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="PipelineLVE.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Shader.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

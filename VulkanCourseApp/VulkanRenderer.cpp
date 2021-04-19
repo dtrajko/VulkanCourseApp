@@ -1,7 +1,7 @@
 #include "VulkanRenderer.h"
 
 #include "VulkanValidation.h"
-#include "Device.h"
+#include "DeviceLVE.h"
 
 #include "assimp/Importer.hpp"
 #include "assimp/scene.h"
@@ -13,14 +13,13 @@
 #include <array>
 
 
-VulkanRenderer::VulkanRenderer()
+VulkanRenderer::VulkanRenderer(std::shared_ptr<WindowLVE> window)
+	: m_Window{ window }
 {
 }
 
-int VulkanRenderer::init(std::shared_ptr<Window> newWindow)
+int VulkanRenderer::init()
 {
-	m_Window = newWindow;
-
 	try
 	{
 		createInstance();
@@ -70,6 +69,35 @@ void VulkanRenderer::updateModel(int modelId, glm::mat4 newModel)
 	if (modelId >= modelList.size()) return;
 
 	modelList[modelId].setModel(newModel);
+}
+
+void VulkanRenderer::drawFrameLVE()
+{
+	uint32_t imageIndex;
+	auto result = m_SwapChain->acquireNextImage(&imageIndex);
+
+	if (result == VK_ERROR_OUT_OF_DATE_KHR) {
+		recreateSwapChainLVE();
+		return;
+	}
+
+	if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
+		throw std::runtime_error("Failed to acquire swap chain image!");
+	}
+
+	recordCommandBufferLVE(imageIndex);
+
+	result = m_SwapChain->submitCommandBuffers(&commandBuffers[imageIndex], &imageIndex);
+
+	if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || m_Window->wasWindowResized()) {
+		m_Window->resetWindowResizedFlag();
+		recreateSwapChainLVE();
+		return;
+	}
+
+	if (result != VK_SUCCESS) {
+		throw std::runtime_error("Failed to present swap chain image!");
+	}
 }
 
 void VulkanRenderer::draw()
@@ -226,6 +254,7 @@ void VulkanRenderer::cleanup()
 
 VulkanRenderer::~VulkanRenderer()
 {
+	cleanup();
 }
 
 void VulkanRenderer::createInstance()
@@ -328,7 +357,7 @@ void VulkanRenderer::createDebugCallback()
 
 void VulkanRenderer::createDevice()
 {
-	m_Device = std::make_shared<Device>(m_Window);
+	m_Device = std::make_shared<DeviceLVE>(m_Window);
 }
 
 /****
@@ -1420,7 +1449,7 @@ void VulkanRenderer::createInputDescriptorSets()
 	}
 }
 
-void VulkanRenderer::recreateSwapChain()
+void VulkanRenderer::recreateSwapChainLVE()
 {
 	auto extent = m_Window->getExtent();
 
@@ -1432,10 +1461,10 @@ void VulkanRenderer::recreateSwapChain()
 	vkDeviceWaitIdle(m_Device->device());
 
 	if (m_SwapChain == nullptr) {
-		m_SwapChain = std::make_unique<SwapChain>(m_Device, extent);
+		m_SwapChain = std::make_unique<SwapChainLVE>(m_Device, extent);
 	}
 	else {
-		m_SwapChain = std::make_unique<SwapChain>(m_Device, extent, std::move(m_SwapChain));
+		m_SwapChain = std::make_unique<SwapChainLVE>(m_Device, extent, std::move(m_SwapChain));
 		freeCommandBuffers();
 		createCommandBuffers();
 	}
@@ -1607,6 +1636,79 @@ void VulkanRenderer::recordCommands(uint32_t currentImage)
 	}
 
 	// printf("Command Buffer end recording.\n");
+}
+
+void VulkanRenderer::recordCommandBufferLVE(int imageIndex)
+{
+	VkCommandBufferBeginInfo beginInfo{};
+	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+
+	if (vkBeginCommandBuffer(commandBuffers[imageIndex], &beginInfo) != VK_SUCCESS) {
+		throw std::runtime_error("Failed to begin recording command buffer!");
+	}
+
+	VkRenderPassBeginInfo renderPassInfo{};
+	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+	renderPassInfo.renderPass = m_SwapChain->getRenderPass();
+	renderPassInfo.framebuffer = m_SwapChain->getFrameBuffer(imageIndex);
+
+	renderPassInfo.renderArea.offset = { 0, 0 };
+	renderPassInfo.renderArea.extent = m_SwapChain->getSwapChainExtent();
+
+	std::array<VkClearValue, 2> clearValues{};
+	clearValues[0].color = { 0.01f, 0.01f, 0.01f, 1.0f };
+	clearValues[1].depthStencil = { 1.0f, 0 };
+	renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
+	renderPassInfo.pClearValues = clearValues.data();
+
+	vkCmdBeginRenderPass(commandBuffers[imageIndex], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+	VkViewport viewport{};
+	viewport.x = 0.0f;
+	viewport.y = 0.0f;
+	viewport.width = static_cast<float>(m_SwapChain->getSwapChainExtent().width);
+	viewport.height = static_cast<float>(m_SwapChain->getSwapChainExtent().height);
+	viewport.minDepth = 0.0f;
+	viewport.maxDepth = 1.0f;
+	VkRect2D scissor{ {0, 0}, m_SwapChain->getSwapChainExtent() };
+	vkCmdSetViewport(commandBuffers[imageIndex], 0, 1, &viewport);
+	vkCmdSetScissor(commandBuffers[imageIndex], 0, 1, &scissor);
+
+	renderGameObjectsLVE(commandBuffers[imageIndex]);
+
+	vkCmdEndRenderPass(commandBuffers[imageIndex]);
+
+	if (vkEndCommandBuffer(commandBuffers[imageIndex]) != VK_SUCCESS) {
+		throw std::runtime_error("Failed to record command buffer (imageIndex = " + std::to_string(imageIndex) + ")!");
+	}
+}
+
+void VulkanRenderer::renderGameObjectsLVE(VkCommandBuffer commandBuffer)
+{
+	m_Pipeline->bind(commandBuffer);
+
+	/****
+	for (auto& obj : m_GameObjectsLVE)
+	{
+		obj.transform2d.rotation = glm::mod(obj.transform2d.rotation + 0.01f, glm::two_pi<float>());
+
+		SimplePushConstantData push{};
+		push.offset = obj.transform2d.translation;
+		push.color = obj.color;
+		push.transform = obj.transform2d.mat2();
+
+		vkCmdPushConstants(
+			commandBuffer,
+			pipelineLayout,
+			VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+			0,
+			sizeof(SimplePushConstantData),
+			&push);
+
+		obj.model->bind(commandBuffer);
+		obj.model->draw(commandBuffer);
+	}
+	****/
 }
 
 /****

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Window.h"
+#include "WindowLVE.h"
 
 // std lib headers
 #include <string>
@@ -22,7 +22,7 @@ struct QueueFamilyIndicesLve {
     bool isComplete() { return graphicsFamilyHasValue && presentationFamilyHasValue; }
 };
 
-class Device {
+class DeviceLVE {
 public:
 #ifdef NDEBUG
     const bool enableValidationLayers = false;
@@ -30,14 +30,14 @@ public:
     const bool enableValidationLayers = true;
 #endif
 
-    Device(std::shared_ptr<Window> window);
-    ~Device();
+    DeviceLVE(std::shared_ptr<WindowLVE> window);
+    ~DeviceLVE();
 
     // Not copyable or movable
-    Device(const Device&) = delete;
-    Device& operator=(const Device&) = delete;
-    Device(Device&&) = delete;
-    Device& operator=(Device&&) = delete;
+    DeviceLVE(const DeviceLVE&) = delete;
+    DeviceLVE& operator=(const DeviceLVE&) = delete;
+    DeviceLVE(DeviceLVE&&) = delete;
+    DeviceLVE& operator=(DeviceLVE&&) = delete;
 
     VkCommandPool getCommandPool() { return commandPool; }
     VkDevice& device() { return device_; }
@@ -94,7 +94,7 @@ private:
     VkInstance instance;
     VkDebugUtilsMessengerEXT debugMessenger;
     VkPhysicalDevice m_PhysicalDevice = VK_NULL_HANDLE;
-    std::shared_ptr<Window> m_Window;
+    std::shared_ptr<WindowLVE> m_Window;
     VkCommandPool commandPool;
 
     VkDevice device_;

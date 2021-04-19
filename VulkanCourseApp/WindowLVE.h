@@ -7,14 +7,14 @@
 #include <string>
 
 
-class Window
+class WindowLVE
 {
 public:
-	Window() = default;
-	Window(uint32_t width, uint32_t height, std::string title);
-	~Window();
+	WindowLVE() = default;
+	WindowLVE(uint32_t width, uint32_t height, std::string title);
+	~WindowLVE();
 
-	Window(const Window&) = delete;
+	WindowLVE(const WindowLVE&) = delete;
 
 	bool shouldClose() { return glfwWindowShouldClose(m_WindowHandle); }
 	VkExtent2D getExtent() { return { m_Width, m_Height }; }

@@ -11,8 +11,9 @@
 #include "Utilities.h"
 #include "Mesh.h"
 #include "MeshModel.h"
-#include "Window.h"
-#include "SwapChain.h"
+#include "WindowLVE.h"
+#include "SwapChainLVE.h"
+#include "PipelineLVE.h"
 
 #include <vector>
 
@@ -20,18 +21,26 @@
 class VulkanRenderer
 {
 public:
-	VulkanRenderer();
-	int init(std::shared_ptr<Window> newWindow);
+	VulkanRenderer() = delete;
+	VulkanRenderer(std::shared_ptr<WindowLVE> window);
+	~VulkanRenderer();
+
+	int init();
 	int createMeshModel(std::string modelFile);
 	void updateModel(int modelId, glm::mat4 newModel);
 	void draw();
 	void cleanup();
-	~VulkanRenderer();
+
+	void recreateSwapChainLVE();
+	void recordCommandBufferLVE(int imageIndex);
+	void renderGameObjectsLVE(VkCommandBuffer commandBuffer);
+	void drawFrameLVE();
 
 private:
-	std::shared_ptr<Window> m_Window; // lveWindow
-	std::shared_ptr<Device> m_Device; // lveDevice
-	std::unique_ptr<SwapChain> m_SwapChain; // lveSwapChain
+	std::shared_ptr<WindowLVE> m_Window; // lveWindow
+	std::shared_ptr<DeviceLVE> m_Device; // lveDevice
+	std::unique_ptr<SwapChainLVE> m_SwapChain; // lveSwapChain
+	std::unique_ptr<PipelineLVE> m_Pipeline; // lvePipeline
 
 	int currentFrame = 0;
 
@@ -149,7 +158,6 @@ private:
 	void createDescriptorSets();
 	void createInputDescriptorSets();
 
-	void recreateSwapChain();
 	void freeCommandBuffers();
 
 	void updateUniformBuffers(uint32_t imageIndex);

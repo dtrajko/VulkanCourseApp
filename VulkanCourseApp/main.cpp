@@ -9,16 +9,16 @@
 #include <iostream>
 
 #include "VulkanRenderer.h"
-#include "Window.h"
+#include "WindowLVE.h"
 
 
-VulkanRenderer vulkanRenderer;
-std::shared_ptr<Window> window;
+std::unique_ptr<VulkanRenderer> vulkanRenderer;
+std::shared_ptr<WindowLVE> window;
 
 
 void initWindow(std::string wName = "Vulkan Renderer", const int width = 1280, const int height = 720)
 {
-	window = std::make_shared<Window>(width, height, wName);
+	window = std::make_shared<WindowLVE>(width, height, wName);
 }
 
 int main()
@@ -27,7 +27,8 @@ int main()
 	initWindow("Vulkan Renderer", 1366, 768);
 
 	// Create VulkanRenderer instance
-	if (vulkanRenderer.init(window) == EXIT_FAILURE)
+	vulkanRenderer = std::make_unique<VulkanRenderer>(window);
+	if (vulkanRenderer->init() == EXIT_FAILURE)
 	{
 		return EXIT_FAILURE;
 	}
@@ -36,8 +37,8 @@ int main()
 	float deltaTime = 0.0f;
 	float lastTime = 0.0f;
 
-	int meshId1 = vulkanRenderer.createMeshModel("Models/cyborg.obj");
-	int meshId2 = vulkanRenderer.createMeshModel("Models/cyborg.obj");
+	int meshId1 = vulkanRenderer->createMeshModel("Models/cyborg.obj");
+	int meshId2 = vulkanRenderer->createMeshModel("Models/cyborg.obj");
 
 	// Loop until closed
 	while (!window->shouldClose())
@@ -61,17 +62,11 @@ int main()
 		modelMat2 = glm::rotate(modelMat2, glm::radians(angle), glm::vec3(0.0f, 1.0f, 0.0f));
 		modelMat2 = glm::scale(modelMat2, glm::vec3(5.0f));
 
-		vulkanRenderer.updateModel(meshId1, modelMat1);
-		vulkanRenderer.updateModel(meshId2, modelMat2);
+		vulkanRenderer->updateModel(meshId1, modelMat1);
+		vulkanRenderer->updateModel(meshId2, modelMat2);
 
-		vulkanRenderer.draw();
+		vulkanRenderer->draw();
 	}
-
-	vulkanRenderer.cleanup();
-
-	// Destroy GLFW window and stop GLFW
-	glfwDestroyWindow(window->getHandle());
-	glfwTerminate();
 
 	return EXIT_SUCCESS;
 }

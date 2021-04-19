@@ -83,23 +83,27 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="Device.cpp" />
+    <ClCompile Include="DeviceLVE.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Mesh.cpp" />
     <ClCompile Include="MeshModel.cpp" />
-    <ClCompile Include="SwapChain.cpp" />
+    <ClCompile Include="PipelineLVE.cpp" />
+    <ClCompile Include="Shader.cpp" />
+    <ClCompile Include="SwapChainLVE.cpp" />
     <ClCompile Include="VulkanRenderer.cpp" />
-    <ClCompile Include="Window.cpp" />
+    <ClCompile Include="WindowLVE.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Device.h" />
+    <ClInclude Include="DeviceLVE.h" />
     <ClInclude Include="Mesh.h" />
     <ClInclude Include="MeshModel.h" />
-    <ClInclude Include="SwapChain.h" />
+    <ClInclude Include="PipelineLVE.h" />
+    <ClInclude Include="Shader.h" />
+    <ClInclude Include="SwapChainLVE.h" />
     <ClInclude Include="Utilities.h" />
     <ClInclude Include="VulkanRenderer.h" />
     <ClInclude Include="VulkanValidation.h" />
-    <ClInclude Include="Window.h" />
+    <ClInclude Include="WindowLVE.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
