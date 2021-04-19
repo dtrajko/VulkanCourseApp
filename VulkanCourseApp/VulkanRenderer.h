@@ -32,7 +32,7 @@ private:
 	Window* m_Window;
 
 	std::unique_ptr<SwapChain> m_SwapChain;
-	Device* m_Device; // lveDevice
+	std::shared_ptr<Device> m_Device; // lveDevice
 
 	int currentFrame = 0;
 
