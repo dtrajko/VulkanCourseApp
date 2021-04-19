@@ -13,12 +13,12 @@
 
 
 VulkanRenderer vulkanRenderer;
-Window* window;
+std::shared_ptr<Window> window;
 
 
 void initWindow(std::string wName = "Vulkan Renderer", const int width = 1280, const int height = 720)
 {
-	window = new Window(width, height, wName);
+	window = std::make_shared<Window>(width, height, wName);
 }
 
 int main()

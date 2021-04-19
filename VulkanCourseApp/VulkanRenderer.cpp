@@ -17,7 +17,7 @@ VulkanRenderer::VulkanRenderer()
 {
 }
 
-int VulkanRenderer::init(Window* newWindow)
+int VulkanRenderer::init(std::shared_ptr<Window> newWindow)
 {
 	m_Window = newWindow;
 

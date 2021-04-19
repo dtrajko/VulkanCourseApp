@@ -21,7 +21,7 @@ class VulkanRenderer
 {
 public:
 	VulkanRenderer();
-	int init(Window* newWindow);
+	int init(std::shared_ptr<Window> newWindow);
 	int createMeshModel(std::string modelFile);
 	void updateModel(int modelId, glm::mat4 newModel);
 	void draw();
@@ -29,10 +29,9 @@ public:
 	~VulkanRenderer();
 
 private:
-	Window* m_Window;
-
-	std::unique_ptr<SwapChain> m_SwapChain;
+	std::shared_ptr<Window> m_Window; // lveWindow
 	std::shared_ptr<Device> m_Device; // lveDevice
+	std::unique_ptr<SwapChain> m_SwapChain; // lveSwapChain
 
 	int currentFrame = 0;
 
