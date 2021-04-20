@@ -44,7 +44,7 @@ int VulkanRendererNew::init()
 		createDescriptorPool();
 		createDescriptorSets();
 		createInputDescriptorSets();
-		createSynchronization();
+		// createSynchronization();
 
 		float aspectRatio = (float)m_SwapChain->getSwapChainExtent().width / (float)m_SwapChain->getSwapChainExtent().height;
 
@@ -240,12 +240,12 @@ void VulkanRendererNew::cleanup()
 		// vkFreeMemory(m_Device->device(), modelDynUniformBufferMemory[i], nullptr);
 	}
 
-	for (size_t i = 0; i < MAX_FRAME_DRAWS; i++)
-	{
-		vkDestroySemaphore(m_Device->device(), imageAvailable[i], nullptr);
-		vkDestroySemaphore(m_Device->device(), renderFinished[i], nullptr);
-		vkDestroyFence(m_Device->device(), drawFences[i], nullptr);
-	}
+	//	for (size_t i = 0; i < MAX_FRAME_DRAWS; i++)
+	//	{
+	//		vkDestroySemaphore(m_Device->device(), imageAvailable[i], nullptr);
+	//		vkDestroySemaphore(m_Device->device(), renderFinished[i], nullptr);
+	//		vkDestroyFence(m_Device->device(), drawFences[i], nullptr);
+	//	}
 
 	//	vkDestroyCommandPool(m_Device->device(), m_Device->getCommandPool(), nullptr);
 	//	for (auto framebuffer : m_SwapChain->getFrameBuffers())
@@ -1781,6 +1781,7 @@ void VulkanRenderer::getPhysicalDevice()
 }
 ****/
 
+/****
 void VulkanRendererNew::allocateDynamicBufferTransferSpace()
 {
 	// 0000000100000000 256
@@ -1800,6 +1801,7 @@ void VulkanRendererNew::allocateDynamicBufferTransferSpace()
 	// printf("allocateDynamicBufferTransferSpace: minUniformBufferOffset = %i\n", (int)minUniformBufferOffset);
 	// printf("allocateDynamicBufferTransferSpace: modelUniformAlignment = %i\n", (int)modelUniformAlignment);
 }
+****/
 
 bool VulkanRendererNew::checkInstanceExtensionSupport(std::vector<const char*>* checkExtensions)
 {
@@ -1833,6 +1835,7 @@ bool VulkanRendererNew::checkInstanceExtensionSupport(std::vector<const char*>* 
 	return true;
 }
 
+/****
 bool VulkanRendererNew::checkDeviceExtensionSupport()
 {
 	// Get device extension cout
@@ -1870,6 +1873,7 @@ bool VulkanRendererNew::checkDeviceExtensionSupport()
 
 	return true;
 }
+****/
 
 bool VulkanRendererNew::checkValidationLayerSupport()
 {
@@ -1908,6 +1912,7 @@ bool VulkanRendererNew::checkValidationLayerSupport()
 	return true;
 }
 
+/****
 bool VulkanRendererNew::checkDeviceSuitable()
 {
 	// Information about the device itself (ID, name, type, verdor, etc)
@@ -1944,6 +1949,7 @@ bool VulkanRendererNew::checkDeviceSuitable()
 
 	return indices.isValid() && extensionsSupported && swapChainValid && deviceFeatures.samplerAnisotropy;
 }
+****/
 
 /****
 QueueFamilyIndices VulkanRenderer::getQueueFamilies()
@@ -2239,6 +2245,7 @@ VkShaderModule VulkanRendererNew::createShaderModule(const std::vector<char>& co
 	return shaderModule;
 }
 
+/****
 void VulkanRendererNew::createSynchronization()
 {
 	imageAvailable.resize(MAX_FRAME_DRAWS);
@@ -2280,6 +2287,7 @@ void VulkanRendererNew::createSynchronization()
 		printf("Vulkan Fence drawFences[%zu] successfully created.\n", i);
 	}
 }
+****/
 
 void VulkanRendererNew::createTextureSampler()
 {
@@ -2337,7 +2345,7 @@ int VulkanRendererNew::createTextureImage(std::string fileName)
 	// Create image to hold final texture
 	VkImage texImage;
 	VkDeviceMemory texImageMemory;
-	texImage = createImage(width, height, VK_FORMAT_B8G8R8A8_UNORM, // VK_FORMAT_R8G8B8A8_UNORM
+	texImage = createImage(width, height, VK_FORMAT_B8G8R8A8_UNORM, // VK_FORMAT_B8G8R8A8_UNORM, VK_FORMAT_R8G8B8A8_UNORM
 		VK_IMAGE_TILING_OPTIMAL,
 		VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
 		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,

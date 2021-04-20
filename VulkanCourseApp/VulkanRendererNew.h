@@ -129,9 +129,9 @@ private:
 	// VkExtent2D swapChainExtent;
 
 	// -- Synchronization
-	std::vector<VkSemaphore> imageAvailable;
-	std::vector<VkSemaphore> renderFinished;
-	std::vector<VkFence> drawFences;
+	// std::vector<VkSemaphore> imageAvailable;
+	// std::vector<VkSemaphore> renderFinished;
+	// std::vector<VkFence> drawFences;
 
 	// Vulkan Functions
 	// -- Create Functions
@@ -150,7 +150,7 @@ private:
 	// void createFramebuffers();
 	// void createCommandPool();
 	void createCommandBuffers();
-	void createSynchronization();
+	// void createSynchronization();
 	void createTextureSampler();
 
 	void createUniformBuffers();
@@ -169,14 +169,14 @@ private:
 	// void getPhysicalDevice();
 
 	// -- Allocate Functions
-	void allocateDynamicBufferTransferSpace();
+	// void allocateDynamicBufferTransferSpace();
 
 	// -- Support Functions
 	// -- -- Checker Functions
 	bool checkInstanceExtensionSupport(std::vector<const char*>* checkExtensions);
-	bool checkDeviceExtensionSupport(); // VkPhysicalDevice device
 	bool checkValidationLayerSupport();
-	bool checkDeviceSuitable(); // VkPhysicalDevice device
+	// bool checkDeviceExtensionSupport(); // VkPhysicalDevice device
+	// bool checkDeviceSuitable(); // VkPhysicalDevice device
 
 	// -- Getter Functions
 	// QueueFamilyIndices getQueueFamilies(); // VkPhysicalDevice device
