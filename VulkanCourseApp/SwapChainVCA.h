@@ -19,12 +19,6 @@ public:
         std::vector<VkPresentModeKHR> presentationModes; // How images should be presented to screen
     };
 
-    struct SwapchainImage
-    {
-        VkImage image;
-        VkImageView imageView;
-    };
-
 public:
     static constexpr int MAX_FRAMES_IN_FLIGHT = 2;
 
@@ -37,19 +31,31 @@ public:
     VkResult acquireNextImage(uint32_t* imageIndex);
     VkResult submitCommandBuffers(const VkCommandBuffer* buffers, uint32_t* imageIndex);
     VkSwapchainKHR& getSwapChainKHR() { return m_SwapchainKHR; }
-    std::vector<SwapchainImage>& getSwapChainImages() { return m_SwapChainImages; }
+    std::vector<VkImage>& getSwapChainImages() { return m_SwapChainImages; }
+    std::vector<VkImageView>& getSwapChainImageViews() { return m_SwapChainImageViews; }
     VkFormat getSwapChainImageFormat() { return m_SwapChainImageFormat; }
     SwapChainDetails getSwapChainDetails();
-    VkRenderPass getRenderPass() { return m_RenderPass; }
-    VkFramebuffer getFrameBuffer(int index) { return m_SwapChainFramebuffers[index]; }
+    VkRenderPass& getRenderPass() { return m_RenderPass; }
+    VkFramebuffer& getFrameBuffer(int index) { return m_SwapChainFramebuffers[index]; }
+    std::vector<VkFramebuffer>& getFrameBuffers() { return m_SwapChainFramebuffers; }
     VkFormat findDepthFormat();
+    VkFormat chooseSupportedFormat(const std::vector<VkFormat>& formats, VkImageTiling tiling, VkFormatFeatureFlags featureFlags);
+    std::vector<VkImageView>& getColorBufferImageViews() { return m_ColorBufferImageViews; }
+    std::vector<VkImageView>& getDepthBufferImageViews() { return m_DepthBufferImageViews; }
 
 private:
     VkSurfaceFormatKHR chooseBestSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& formats);
     VkPresentModeKHR chooseBestPresentationMode(const std::vector<VkPresentModeKHR>& presentationModes);
     VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& surfaceCapabilities);
     VkImageView createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags);
+    size_t imageCount() { return m_SwapChainImages.size(); }
+    VkImage createImage(uint32_t width, uint32_t height, VkFormat format,
+        VkImageTiling tiling, VkImageUsageFlags useFlags, VkMemoryPropertyFlags propFlags, VkDeviceMemory* imageMemory);
     void createRenderPass();
+    void createColorBufferImage();
+    void createDepthResources();
+    void createFramebuffers();
+    void createSyncObjects();
 
 private:
     std::shared_ptr<DeviceLVE> m_Device;
@@ -64,11 +70,23 @@ private:
     std::vector<VkFramebuffer> m_SwapChainFramebuffers;
     VkRenderPass m_RenderPass;
 
-    std::vector<SwapchainImage> m_SwapChainImages;
-
     SwapChainDetails m_SwapChainDetails;
 
     size_t currentFrame = 0;
+
+    uint32_t m_SwapChainImageCount;
+
+    std::vector<VkImage> m_SwapChainImages;
+    std::vector<VkImageView> m_SwapChainImageViews;
+
+    std::vector<VkImage> m_ColorBufferImages;
+    std::vector<VkDeviceMemory> m_ColorBufferImageMemory;
+    std::vector<VkImageView> m_ColorBufferImageViews;
+
+    // framebuffers / depth resources
+    std::vector<VkImage> m_DepthBufferImages;
+    std::vector<VkDeviceMemory> m_DepthBufferImageMemorys;
+    std::vector<VkImageView> m_DepthBufferImageViews;
 
     // synchronization
     std::vector<VkSemaphore> m_ImageAvailableSemaphores;

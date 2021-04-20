@@ -8,13 +8,23 @@
 #include <vector>
 #include <iostream>
 
-#include "VulkanRenderer.h"
+#define VULKAN_RENDERER_NEW
+
 #include "WindowLVE.h"
 
+#if defined(VULKAN_RENDERER_NEW)
+#include "VulkanRendererNew.h"
+#else
+#include "VulkanRenderer.h"
+#endif
 
-std::unique_ptr<VulkanRenderer> vulkanRenderer;
 std::shared_ptr<WindowLVE> window;
 
+#if defined(VULKAN_RENDERER_NEW)
+std::unique_ptr<VulkanRendererNew> vulkanRenderer;
+#else
+std::unique_ptr<VulkanRenderer> vulkanRenderer;
+#endif
 
 void initWindow(std::string wName = "Vulkan Renderer", const int width = 1280, const int height = 720)
 {
@@ -27,7 +37,12 @@ int main()
 	initWindow("Vulkan Renderer", 1366, 768);
 
 	// Create VulkanRenderer instance
+#if defined(VULKAN_RENDERER_NEW)
+	vulkanRenderer = std::make_unique<VulkanRendererNew>(window);
+#else
 	vulkanRenderer = std::make_unique<VulkanRenderer>(window);
+#endif
+
 	if (vulkanRenderer->init() == EXIT_FAILURE)
 	{
 		return EXIT_FAILURE;

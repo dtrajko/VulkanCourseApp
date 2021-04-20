@@ -21,9 +21,6 @@ SwapChainVCA::SwapChainVCA(std::shared_ptr<DeviceLVE> device, VkExtent2D extent,
     m_SwapChainOld = nullptr;
 }
 
-SwapChainVCA::~SwapChainVCA() {
-}
-
 void SwapChainVCA::init()
 {
     // Get SwapChain details so we can pick best settings
@@ -38,14 +35,14 @@ void SwapChainVCA::init()
     VkExtent2D extent = chooseSwapExtent(swapChainDetails.surfaceCapabilities);
 
     // How many images are in the swap chain? Get 1 more than the minimum to allow triple buffering
-    uint32_t imageCount = swapChainDetails.surfaceCapabilities.minImageCount + 1;
+    m_SwapChainImageCount = swapChainDetails.surfaceCapabilities.minImageCount + 1;
 
     // If image count higher than max, then clamp down to max
     // If 0, then limitless
     if (swapChainDetails.surfaceCapabilities.maxImageCount > 0 &&
-        swapChainDetails.surfaceCapabilities.maxImageCount < imageCount)
+        swapChainDetails.surfaceCapabilities.maxImageCount < m_SwapChainImageCount)
     {
-        imageCount = swapChainDetails.surfaceCapabilities.maxImageCount;
+        m_SwapChainImageCount = swapChainDetails.surfaceCapabilities.maxImageCount;
     }
 
     // Creation information for swap chain
@@ -56,7 +53,7 @@ void SwapChainVCA::init()
     swapChainCreateInfo.imageColorSpace = surfaceFormat.colorSpace;                           // Swapchain color space
     swapChainCreateInfo.presentMode = presentMode;                                            // Swapchain presentation mode
     swapChainCreateInfo.imageExtent = extent;                                                 // Swapchain image extents
-    swapChainCreateInfo.minImageCount = imageCount;                                           // Minimum images in swapchain
+    swapChainCreateInfo.minImageCount = m_SwapChainImageCount;                                // Minimum images in swapchain
     swapChainCreateInfo.imageArrayLayers = 1;                                                 // Number of layers for each image in chain
     swapChainCreateInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;                     // What attachment images will be used as
     swapChainCreateInfo.preTransform = swapChainDetails.surfaceCapabilities.currentTransform; // Transform to perform to swap chain images
@@ -112,13 +109,18 @@ void SwapChainVCA::init()
     for (VkImage image : images)
     {
         // Store image handle
-        SwapchainImage swapChainImage = {};
-        swapChainImage.image = image;
-        swapChainImage.imageView = createImageView(image, m_SwapChainImageFormat, VK_IMAGE_ASPECT_COLOR_BIT);
+        VkImageView imageView = createImageView(image, m_SwapChainImageFormat, VK_IMAGE_ASPECT_COLOR_BIT);
 
         // Add to swapchain image list
-        m_SwapChainImages.push_back(swapChainImage);
+        m_SwapChainImages.push_back(image);
+        m_SwapChainImageViews.push_back(imageView);
     }
+
+    createRenderPass();
+    createColorBufferImage();
+    createDepthResources();
+    createFramebuffers();
+    createSyncObjects();
 }
 
 VkResult SwapChainVCA::acquireNextImage(uint32_t* imageIndex) {
@@ -234,7 +236,7 @@ VkSurfaceFormatKHR SwapChainVCA::chooseBestSurfaceFormat(const std::vector<VkSur
     // If only 1 format available and is undefined, then this means ALL formats are available (no restrictions)
     if (formats.size() == 1 && formats[0].format == VK_FORMAT_UNDEFINED)
     {
-        return { VK_FORMAT_R8G8B8A8_UNORM, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR };
+        return { VK_FORMAT_B8G8R8A8_UNORM, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR };
     }
 
     // If restricted, search for optimal format
@@ -249,6 +251,94 @@ VkSurfaceFormatKHR SwapChainVCA::chooseBestSurfaceFormat(const std::vector<VkSur
 
     // If can't find optimal format, then just return first format
     return formats[0];
+}
+
+void SwapChainVCA::createColorBufferImage()
+{
+    // Resize supported format for color attachment
+    m_ColorBufferImages.resize(m_SwapChainImages.size());
+    m_ColorBufferImageMemory.resize(m_SwapChainImages.size());
+    m_ColorBufferImageViews.resize(m_SwapChainImages.size());
+
+    // Get supported format for color attachment
+    VkFormat colorBufferImageFormat = chooseSupportedFormat(
+        { VK_FORMAT_B8G8R8A8_UNORM }, // VK_FORMAT_R8G8B8A8_UNORM
+        VK_IMAGE_TILING_OPTIMAL,
+        VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+
+    for (size_t i = 0; i < m_SwapChainImages.size(); i++)
+    {
+        // Create Color Buffer Image
+        m_ColorBufferImages[i] = createImage(m_SwapChainExtent.width, m_SwapChainExtent.height, colorBufferImageFormat,
+            VK_IMAGE_TILING_OPTIMAL,
+            VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT,
+            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+            &m_ColorBufferImageMemory[i]);
+
+        // Create Color Buffer Image View
+        m_ColorBufferImageViews[i] = createImageView(m_ColorBufferImages[i], colorBufferImageFormat, VK_IMAGE_ASPECT_COLOR_BIT);
+    }
+}
+
+void SwapChainVCA::createDepthResources()
+{
+    m_DepthBufferImages.resize(m_SwapChainImages.size());
+    m_DepthBufferImageMemorys.resize(m_SwapChainImages.size());
+    m_DepthBufferImageViews.resize(m_SwapChainImages.size());
+
+    // Get supported format for depth buffer
+    VkFormat depthBufferImageFormat = chooseSupportedFormat(
+        { VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D32_SFLOAT, VK_FORMAT_D24_UNORM_S8_UINT },
+        VK_IMAGE_TILING_OPTIMAL,
+        VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
+
+    for (size_t i = 0; i < m_SwapChainImages.size(); i++)
+    {
+        // Create Depth Buffer Image
+        m_DepthBufferImages[i] = createImage(m_SwapChainExtent.width, m_SwapChainExtent.height, depthBufferImageFormat,
+            VK_IMAGE_TILING_OPTIMAL,
+            VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT,
+            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+            &m_DepthBufferImageMemorys[i]);
+
+        // Create Depth Buffer Image View
+        m_DepthBufferImageViews[i] = createImageView(m_DepthBufferImages[i], depthBufferImageFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
+    }
+}
+
+void SwapChainVCA::createFramebuffers()
+{
+    // Resize framebuffer count to equal swapchain image count
+    m_SwapChainFramebuffers.resize(m_SwapChainImages.size());
+
+    // Create a framebuffer for each swapchain image
+    for (size_t i = 0; i < m_SwapChainImages.size(); i++)
+    {
+        std::array<VkImageView, 3> attachments =
+        {
+            m_SwapChainImageViews[i],
+            m_ColorBufferImageViews[i],
+            m_DepthBufferImageViews[i],
+        };
+
+        VkFramebufferCreateInfo framebufferCreateInfo = {};
+        framebufferCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+        framebufferCreateInfo.renderPass = m_RenderPass;         // Render Pass layout the Framebuffer will be used with
+        framebufferCreateInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
+        framebufferCreateInfo.pAttachments = attachments.data(); // List of attachments (1:1 with Render Pass)
+        framebufferCreateInfo.width = m_SwapChainExtent.width;     // Framebuffer width
+        framebufferCreateInfo.height = m_SwapChainExtent.height;   // Framebuffer height
+        framebufferCreateInfo.layers = 1;                        // Framebuffer layers
+
+        VkResult result = vkCreateFramebuffer(m_Device->device(), &framebufferCreateInfo, nullptr, &m_SwapChainFramebuffers[i]);
+
+        if (result != VK_SUCCESS)
+        {
+            throw std::runtime_error("Failed to create a Framebuffer!");
+        }
+
+        printf("Vulkan Framebuffer successfully created.\n");
+    }
 }
 
 VkPresentModeKHR SwapChainVCA::chooseBestPresentationMode(const std::vector<VkPresentModeKHR>& presentationModes)
@@ -338,9 +428,39 @@ VkImageView SwapChainVCA::createImageView(VkImage image, VkFormat format, VkImag
     return imageView;
 }
 
-void SwapChainVCA::createRenderPass() {
-    VkAttachmentDescription depthAttachment{};
-    depthAttachment.format = findDepthFormat();
+void SwapChainVCA::createRenderPass()
+{
+    // Array of our subpasses
+    std::array<VkSubpassDescription, 2> subpasses = {};
+
+    // ATTACHMENTS
+
+    // -- SUBPASS 1 ATTACHMENTS + REFERENCES (INPUT ATTACHMENTS)
+
+    // -- -- Color Attachment (Input Attachment)
+    VkFormat colorBufferImageFormat = chooseSupportedFormat(
+        { VK_FORMAT_B8G8R8A8_UNORM }, // VK_FORMAT_R8G8B8A8_UNORM
+        VK_IMAGE_TILING_OPTIMAL,
+        VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+
+    VkAttachmentDescription colorAttachment = {};
+    colorAttachment.format = colorBufferImageFormat;
+    colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
+    colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    colorAttachment.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+    // -- -- Depth Attachment (Input Attachment)
+    VkFormat depthBufferImageFormat = chooseSupportedFormat(
+        { VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D32_SFLOAT, VK_FORMAT_D24_UNORM_S8_UINT },
+        VK_IMAGE_TILING_OPTIMAL,
+        VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
+
+    VkAttachmentDescription depthAttachment = {};
+    depthAttachment.format = depthBufferImageFormat;
     depthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
     depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
     depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
@@ -349,50 +469,260 @@ void SwapChainVCA::createRenderPass() {
     depthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
     depthAttachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
-    VkAttachmentReference depthAttachmentRef{};
-    depthAttachmentRef.attachment = 1;
-    depthAttachmentRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+    // -- -- Color Attachment (Input Attachment) Reference
+    VkAttachmentReference colorAttachmentReference = {};
+    colorAttachmentReference.attachment = 1; // ID of attachments array in createFramebuffers
+    colorAttachmentReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
-    VkAttachmentDescription colorAttachment = {};
-    colorAttachment.format = getSwapChainImageFormat();
-    colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
-    colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-    colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-    colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-    colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+    // -- -- Depth Attachment (Input Attachment) Reference
+    VkAttachmentReference depthAttachmentReference = {};
+    depthAttachmentReference.attachment = 2; // ID of attachments array in createFramebuffers
+    depthAttachmentReference.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
-    VkAttachmentReference colorAttachmentRef = {};
-    colorAttachmentRef.attachment = 0;
-    colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    // Set up Subpass 1
+    subpasses[0].pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+    subpasses[0].colorAttachmentCount = 1;
+    subpasses[0].pColorAttachments = &colorAttachmentReference;
+    subpasses[0].pDepthStencilAttachment = &depthAttachmentReference;
 
-    VkSubpassDescription subpass = {};
-    subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-    subpass.colorAttachmentCount = 1;
-    subpass.pColorAttachments = &colorAttachmentRef;
-    subpass.pDepthStencilAttachment = &depthAttachmentRef;
+    // -- SUBPASS 2 ATTACHMENTS + REFERENCES (INPUT ATTACHMENTS)
 
-    VkSubpassDependency dependency = {};
+    // -- -- Swapchain Color Attachment
+    VkAttachmentDescription swapchainColorAttachment = {};
+    swapchainColorAttachment.format = m_SwapChainImageFormat;                     // Format to use for attachment
+    swapchainColorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;                   // Number of samples to write for multisampling
+    swapchainColorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;              // Describes what to do with attachment before rendering
+    swapchainColorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;            // Describes what to do with attachment after rendering
+    swapchainColorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;   // Describes what to do with stencil before rendering
+    swapchainColorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE; // Describes what to do with stencil after rendering
 
-    dependency.dstSubpass = 0;
-    dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-    dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
-    dependency.srcAccessMask = 0;
-    dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    // Framebuffer data will be stored as an image, but images can be given different data layouts
+    // to give optimal use for certain operations
+    swapchainColorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;         // Image data layout before Render Pass starts
+    swapchainColorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;     // Image data layout after Render Pass (to change to)
 
-    std::array<VkAttachmentDescription, 2> attachments = { colorAttachment, depthAttachment };
-    VkRenderPassCreateInfo renderPassInfo = {};
-    renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-    renderPassInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
-    renderPassInfo.pAttachments = attachments.data();
-    renderPassInfo.subpassCount = 1;
-    renderPassInfo.pSubpasses = &subpass;
-    renderPassInfo.dependencyCount = 1;
-    renderPassInfo.pDependencies = &dependency;
+    // Attachment reference uses an attachment index that refers to index in the attachment list passed to renderPassCreateInfo
+    VkAttachmentReference swapchainColorAttachmentReference = {};
+    swapchainColorAttachmentReference.attachment = 0; // First one from the render pass attachments list
+    swapchainColorAttachmentReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
-    if (vkCreateRenderPass(m_Device->device(), &renderPassInfo, nullptr, &m_RenderPass) != VK_SUCCESS) {
-        throw std::runtime_error("failed to create render pass!");
+    // References to attachments that subpass will take input from
+    std::array<VkAttachmentReference, 2> inputReferences;
+    inputReferences[0].attachment = 1;
+    inputReferences[0].layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    inputReferences[1].attachment = 2;
+    inputReferences[1].layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+    // Set up Subpass 2
+    subpasses[1].pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+    subpasses[1].colorAttachmentCount = 1;
+    subpasses[1].pColorAttachments = &swapchainColorAttachmentReference;
+    subpasses[1].inputAttachmentCount = static_cast<uint32_t>(inputReferences.size());
+    subpasses[1].pInputAttachments = inputReferences.data();
+
+    // SUBPASS DEPENDENCIES
+
+    // Need to determine when layout transitions occur using subpass dependencies
+    std::array<VkSubpassDependency, 3> subpassDependencies;
+
+    // Conversion from VK_IMAGE_LAYOUT_UNDEFINED (colorAttachment.initialLayout) to 
+    // VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL (colorAttachmentReference.layout)
+    // Transition must happen after:
+    subpassDependencies[0].srcSubpass = VK_SUBPASS_EXTERNAL; // Subpass index (VK_SUBPASS_EXTERNAL = Special value meaning outside of Render Pass)
+    subpassDependencies[0].srcStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT; // Pipeline stage
+    subpassDependencies[0].srcAccessMask = VK_ACCESS_MEMORY_READ_BIT;           // Stage access mask (memory access)
+    // But must happen before:
+    subpassDependencies[0].dstSubpass = 0; // First subpass (?)
+    subpassDependencies[0].dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    subpassDependencies[0].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+    subpassDependencies[0].dependencyFlags = 0;
+
+    // Subpass 1 layout (color/depth) to Subpass 2 layout
+    subpassDependencies[1].srcSubpass = 0;
+    subpassDependencies[1].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    subpassDependencies[1].srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+    subpassDependencies[1].dstSubpass = 1;
+    subpassDependencies[1].dstStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+    subpassDependencies[1].dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+    subpassDependencies[1].dependencyFlags = 0;
+
+    // Conversion from VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL (colorAttachmentReference.layout) to 
+    // VK_IMAGE_LAYOUT_PRESENT_SRC_KHR (colorAttachment.finalLayout)
+    // Transition must happen after:
+    subpassDependencies[2].srcSubpass = 0; // Subpass index
+    subpassDependencies[2].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    subpassDependencies[2].srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+    // But must happen before:
+    subpassDependencies[2].dstSubpass = VK_SUBPASS_EXTERNAL;
+    subpassDependencies[2].dstStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+    subpassDependencies[2].dstAccessMask = VK_ACCESS_MEMORY_READ_BIT;
+    subpassDependencies[2].dependencyFlags = 0;
+
+    std::array<VkAttachmentDescription, 3> renderPassAttachments = { swapchainColorAttachment, colorAttachment, depthAttachment };
+
+    // Create info for Render Pass
+    VkRenderPassCreateInfo renderPassCreateInfo = {};
+    renderPassCreateInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+    renderPassCreateInfo.attachmentCount = static_cast<uint32_t>(renderPassAttachments.size());
+    renderPassCreateInfo.pAttachments = renderPassAttachments.data();
+    renderPassCreateInfo.subpassCount = static_cast<uint32_t>(subpasses.size());
+    renderPassCreateInfo.pSubpasses = subpasses.data();
+    renderPassCreateInfo.dependencyCount = static_cast<uint32_t>(subpassDependencies.size());
+    renderPassCreateInfo.pDependencies = subpassDependencies.data();
+
+    VkResult result = vkCreateRenderPass(m_Device->device(), &renderPassCreateInfo, nullptr, &m_RenderPass);
+
+    if (result != VK_SUCCESS)
+    {
+        throw std::runtime_error("Failed to create a Render Pass!");
+    }
+
+    printf("Vulkan Render Pass successfully created.\n");
+}
+
+VkFormat SwapChainVCA::chooseSupportedFormat(const std::vector<VkFormat>& formats, VkImageTiling tiling, VkFormatFeatureFlags featureFlags)
+{
+    // Loop through options and find compatible one
+    for (VkFormat format : formats)
+    {
+        // Get properties for given format on this device
+        VkFormatProperties properties;
+        vkGetPhysicalDeviceFormatProperties(m_Device->getPhysicalDevice(), format, &properties);
+
+        // Depending on tiling choice, need to check for different bit flag
+        if (tiling == VK_IMAGE_TILING_LINEAR && (properties.linearTilingFeatures & featureFlags) == featureFlags)
+        {
+            return format;
+        }
+        else if (tiling == VK_IMAGE_TILING_OPTIMAL && (properties.optimalTilingFeatures & featureFlags) == featureFlags)
+        {
+            return format;
+        }
+    }
+
+    throw std::runtime_error("Failed to find a matching format!");
+}
+
+void SwapChainVCA::createSyncObjects() {
+    m_ImageAvailableSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
+    m_RenderFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
+    m_InFlightFences.resize(MAX_FRAMES_IN_FLIGHT);
+    m_ImagesInFlight.resize(imageCount(), VK_NULL_HANDLE);
+
+    VkSemaphoreCreateInfo semaphoreInfo = {};
+    semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+
+    VkFenceCreateInfo fenceInfo = {};
+    fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+    fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+
+    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+        if (vkCreateSemaphore(m_Device->device(), &semaphoreInfo, nullptr, &m_ImageAvailableSemaphores[i]) !=
+            VK_SUCCESS ||
+            vkCreateSemaphore(m_Device->device(), &semaphoreInfo, nullptr, &m_RenderFinishedSemaphores[i]) !=
+            VK_SUCCESS ||
+            vkCreateFence(m_Device->device(), &fenceInfo, nullptr, &m_InFlightFences[i]) != VK_SUCCESS) {
+            throw std::runtime_error("failed to create synchronization objects for a frame!");
+        }
+    }
+}
+
+VkImage SwapChainVCA::createImage(uint32_t width, uint32_t height, VkFormat format,
+    VkImageTiling tiling, VkImageUsageFlags useFlags, VkMemoryPropertyFlags propFlags, VkDeviceMemory* imageMemory)
+{
+    // CREATE IMAGE
+    // Image Creation Info
+    VkImageCreateInfo imageCreateInfo = {};
+    imageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+    imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;              // Type of image (1D, 2D or 3D)
+    imageCreateInfo.extent.width = width;                      // Width of image extent
+    imageCreateInfo.extent.height = height;                    // Height of image extent
+    imageCreateInfo.extent.depth = 1;                          // Depth of image (just 1, no 3D aspect)
+    imageCreateInfo.mipLevels = 1;                             // Number of mipmap levels
+    imageCreateInfo.arrayLayers = 1;                           // Number of levels in image array
+    imageCreateInfo.format = format;                           // Format type of image
+    imageCreateInfo.tiling = tiling;                           // How image data should be "tiled" (arranged for optimal reading)
+    imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED; // Layout of image data on creation
+    imageCreateInfo.usage = useFlags;                          // Bit flags defining what image will be used for
+    imageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;           // Number of samples for multi-sampling
+    imageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;   // Whether image can be shared between queues
+
+    VkImage image;
+    VkResult result = vkCreateImage(m_Device->device(), &imageCreateInfo, nullptr, &image);
+
+    if (result != VK_SUCCESS)
+    {
+        throw std::runtime_error("Failed to create an Image!");
+    }
+
+    printf("Vulkan Image successfully created.\n");
+
+    // CREATE MEMORY FOR IMAGE
+
+    // Get memory requirements for a type of image
+    VkMemoryRequirements memoryRequirements;
+    vkGetImageMemoryRequirements(m_Device->device(), image, &memoryRequirements);
+
+    // Allocate memory using image requirements and user defined properties
+    VkMemoryAllocateInfo memoryAllocInfo = {};
+    memoryAllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    memoryAllocInfo.allocationSize = memoryRequirements.size;
+    memoryAllocInfo.memoryTypeIndex = findMemoryTypeIndex(m_Device->getPhysicalDevice(), memoryRequirements.memoryTypeBits, propFlags);
+
+    result = vkAllocateMemory(m_Device->device(), &memoryAllocInfo, nullptr, imageMemory);
+
+    if (result != VK_SUCCESS)
+    {
+        throw std::runtime_error("Failed to allocate memory for image!");
+    }
+
+    printf("Vulkan Image Memory successfully allocated.\n");
+
+    // Connect memory to image
+    vkBindImageMemory(m_Device->device(), image, *imageMemory, 0);
+
+    return image;
+}
+
+SwapChainVCA::~SwapChainVCA()
+{
+    for (auto semaphore : m_ImageAvailableSemaphores) {
+        vkDestroySemaphore(m_Device->device(), semaphore, nullptr);
+    }
+
+    for (auto semaphore : m_RenderFinishedSemaphores) {
+        vkDestroySemaphore(m_Device->device(), semaphore, nullptr);
+    }
+
+    for (auto fence : m_InFlightFences) {
+        vkDestroyFence(m_Device->device(), fence, nullptr);
+    }
+
+    for (auto image : m_ColorBufferImages) {
+        vkDestroyImage(m_Device->device(), image, nullptr);
+    }
+
+    for (auto image : m_DepthBufferImages) {
+        vkDestroyImage(m_Device->device(), image, nullptr);
+    }
+
+    for (auto imageView : m_ColorBufferImageViews) {
+        vkDestroyImageView(m_Device->device(), imageView, nullptr);
+    }
+
+    for (auto imageView : m_DepthBufferImageViews) {
+        vkDestroyImageView(m_Device->device(), imageView, nullptr);
+    }
+
+    for (auto deviceMemory : m_ColorBufferImageMemory) {
+        vkFreeMemory(m_Device->device(), deviceMemory, nullptr);
+    }
+
+    for (auto deviceMemory : m_DepthBufferImageMemorys) {
+        vkFreeMemory(m_Device->device(), deviceMemory, nullptr);
+    }
+
+    for (auto framebuffer : m_SwapChainFramebuffers) {
+        vkDestroyFramebuffer(m_Device->device(), framebuffer, nullptr);
     }
 }
