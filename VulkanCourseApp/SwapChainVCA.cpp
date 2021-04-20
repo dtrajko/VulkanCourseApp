@@ -147,7 +147,7 @@ VkResult SwapChainVCA::submitCommandBuffers(const VkCommandBuffer* buffers, uint
     if (m_ImagesInFlight[*imageIndex] != VK_NULL_HANDLE) {
         vkWaitForFences(m_Device->device(), 1, &m_ImagesInFlight[*imageIndex], VK_TRUE, UINT64_MAX);
     }
-
+    
     m_ImagesInFlight[*imageIndex] = m_InFlightFences[currentFrame];
 
     VkSubmitInfo submitInfo = {};
@@ -168,8 +168,10 @@ VkResult SwapChainVCA::submitCommandBuffers(const VkCommandBuffer* buffers, uint
 
     vkResetFences(m_Device->device(), 1, &m_InFlightFences[currentFrame]);
 
-    if (vkQueueSubmit(m_Device->graphicsQueue(), 1, &submitInfo, m_InFlightFences[currentFrame]) != VK_SUCCESS) {
-        throw std::runtime_error("failed to submit draw command buffer!");
+    VkResult result = vkQueueSubmit(m_Device->graphicsQueue(), 1, &submitInfo, m_InFlightFences[currentFrame]);
+
+    if (result != VK_SUCCESS) {
+        throw std::runtime_error("Failed to submit draw command buffer!");
     }
 
     VkPresentInfoKHR presentInfo = {};
@@ -184,7 +186,7 @@ VkResult SwapChainVCA::submitCommandBuffers(const VkCommandBuffer* buffers, uint
 
     presentInfo.pImageIndices = imageIndex;
 
-    auto result = vkQueuePresentKHR(m_Device->presentationQueue(), &presentInfo);
+    result = vkQueuePresentKHR(m_Device->presentationQueue(), &presentInfo);
 
     currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 
