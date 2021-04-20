@@ -3,15 +3,21 @@
 #include <fstream>
 
 
-Shader::Shader(std::shared_ptr<DeviceLVE> device)
+Shader::Shader(std::shared_ptr<DeviceLVE> device, const std::string& filepathVertex, const std::string& filepathFragment)
 	: m_Device{ device }
 {
+    auto secondVertexShaderCode = readFile("Shaders/second_vert.spv");
+    auto secondFragmentShaderCode = readFile("Shaders/second_frag.spv");
+
+    // Build shaders
+    m_ShaderModuleVertex = createShaderModule(secondVertexShaderCode);
+    m_ShaderModuleFragment = createShaderModule(secondFragmentShaderCode);
 }
 
 Shader::~Shader()
 {
-    vkDestroyShaderModule(m_Device->device(), vertShaderModule, nullptr);
-    vkDestroyShaderModule(m_Device->device(), fragShaderModule, nullptr);
+    vkDestroyShaderModule(m_Device->device(), m_ShaderModuleVertex, nullptr);
+    vkDestroyShaderModule(m_Device->device(), m_ShaderModuleFragment, nullptr);
 }
 
 std::vector<char> Shader::readFile(const std::string& filepath)
@@ -32,14 +38,22 @@ std::vector<char> Shader::readFile(const std::string& filepath)
     return buffer;
 }
 
-void Shader::createShaderModule(const std::vector<char>& code, VkShaderModule* shaderModule)
+VkShaderModule Shader::createShaderModule(const std::vector<char>& code)
 {
-    VkShaderModuleCreateInfo createInfo{};
-    createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-    createInfo.codeSize = code.size();
-    createInfo.pCode = reinterpret_cast<const uint32_t*>(code.data());
+    VkShaderModuleCreateInfo shaderModuleCreateInfo = {};
+    shaderModuleCreateInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+    shaderModuleCreateInfo.codeSize = code.size();                                 // Size of code
+    shaderModuleCreateInfo.pCode = reinterpret_cast<const uint32_t*>(code.data()); // Pointer to code (of uint32_t pointer type)
 
-    if (vkCreateShaderModule(m_Device->device(), &createInfo, nullptr, shaderModule) != VK_SUCCESS) {
-        throw std::runtime_error("Failed to create shader module!");
+    VkShaderModule shaderModule;
+    VkResult result = vkCreateShaderModule(m_Device->device(), &shaderModuleCreateInfo, nullptr, &shaderModule);
+
+    if (result != VK_SUCCESS)
+    {
+        throw std::runtime_error("Failed to create a Shader Module!");
     }
+
+    printf("Vulkan Shader Module successfully created.\n");
+
+    return shaderModule;
 }

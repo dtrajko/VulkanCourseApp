@@ -42,6 +42,9 @@
     <ClCompile Include="Shader.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="PipelineVCA.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="VulkanRenderer.h">
@@ -72,6 +75,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Shader.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="PipelineVCA.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

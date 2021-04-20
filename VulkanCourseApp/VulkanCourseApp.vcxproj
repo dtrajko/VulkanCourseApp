@@ -88,6 +88,7 @@
     <ClCompile Include="Mesh.cpp" />
     <ClCompile Include="MeshModel.cpp" />
     <ClCompile Include="PipelineLVE.cpp" />
+    <ClCompile Include="PipelineVCA.cpp" />
     <ClCompile Include="Shader.cpp" />
     <ClCompile Include="SwapChainLVE.cpp" />
     <ClCompile Include="VulkanRenderer.cpp" />
@@ -98,6 +99,7 @@
     <ClInclude Include="Mesh.h" />
     <ClInclude Include="MeshModel.h" />
     <ClInclude Include="PipelineLVE.h" />
+    <ClInclude Include="PipelineVCA.h" />
     <ClInclude Include="Shader.h" />
     <ClInclude Include="SwapChainLVE.h" />
     <ClInclude Include="Utilities.h" />

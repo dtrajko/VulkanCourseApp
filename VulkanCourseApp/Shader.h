@@ -9,20 +9,23 @@
 class Shader {
 
 public:
-	Shader(std::shared_ptr<DeviceLVE> device);
+	Shader(std::shared_ptr<DeviceLVE> device, const std::string& filepathVertex, const std::string& filepathFragment);
 	~Shader();
 
 	Shader(const Shader&) = delete;
 	Shader& operator=(const Shader&) = delete;
 
+	VkShaderModule& getShaderModuleVertex() { return m_ShaderModuleVertex; };
+	VkShaderModule& getShaderModuleFragment() { return m_ShaderModuleFragment; };
+
 private:
 	static std::vector<char> readFile(const std::string& filepath);
-	void createShaderModule(const std::vector<char>& code, VkShaderModule* shaderModule);
+	VkShaderModule createShaderModule(const std::vector<char>& code);
 
 private:
 	std::shared_ptr<DeviceLVE> m_Device;
 
-	VkShaderModule vertShaderModule;
-	VkShaderModule fragShaderModule;
+	VkShaderModule m_ShaderModuleVertex;
+	VkShaderModule m_ShaderModuleFragment;
 
 };
