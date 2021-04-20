@@ -36,7 +36,7 @@ int VulkanRendererNew::init()
 		// createColorBufferImage();
 		// createDepthBufferImage();
 		// createFramebuffers();
-		createCommandPool();
+		// createCommandPool();
 		createCommandBuffers();
 		createTextureSampler();
 		// allocateDynamicBufferTransferSpace();
@@ -247,7 +247,7 @@ void VulkanRendererNew::cleanup()
 		vkDestroyFence(m_Device->device(), drawFences[i], nullptr);
 	}
 
-	vkDestroyCommandPool(m_Device->device(), graphicsCommandPool, nullptr);
+	//	vkDestroyCommandPool(m_Device->device(), m_Device->getCommandPool(), nullptr);
 	//	for (auto framebuffer : m_SwapChain->getFrameBuffers())
 	//	{
 	//		vkDestroyFramebuffer(m_Device->device(), framebuffer, nullptr);
@@ -1183,6 +1183,7 @@ void VulkanRendererNew::createFramebuffers()
 }
 ****/
 
+/****
 void VulkanRendererNew::createCommandPool()
 {
 	// Get indices of queue families from device
@@ -1203,6 +1204,7 @@ void VulkanRendererNew::createCommandPool()
 
 	printf("Vulkan Graphics Command Pool successfully created.\n");
 }
+****/
 
 void VulkanRendererNew::createCommandBuffers()
 {
@@ -1211,7 +1213,7 @@ void VulkanRendererNew::createCommandBuffers()
 
 	VkCommandBufferAllocateInfo cbAllocInfo = {};
 	cbAllocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-	cbAllocInfo.commandPool = graphicsCommandPool;
+	cbAllocInfo.commandPool = m_Device->getCommandPool();
 	cbAllocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY; // VK_COMMAND_BUFFER_LEVEL_PRIMARY   : Buffer you submit directly to queue. 
 	                                                     // Can't be called by other buffers.
 	                                                     // VK_COMMAND_BUFFER_LEVEL_SECONDARY : Buffer can't be called directly. 
@@ -2345,14 +2347,14 @@ int VulkanRendererNew::createTextureImage(std::string fileName)
 
 	// Transition image to be DST for copy operation
 	// Use Memory Barrier to transition image layout from VK_IMAGE_LAYOUT_UNDEFINED to VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL
-	transitionImageLayout(m_Device->device(), m_Device->graphicsQueue(), graphicsCommandPool,
+	transitionImageLayout(m_Device->device(), m_Device->graphicsQueue(), m_Device->getCommandPool(),
 		texImage, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
 	// Copy image data
-	copyImageBuffer(m_Device->device(), m_Device->graphicsQueue(), graphicsCommandPool, imageStagingBuffer, texImage, width, height);
+	copyImageBuffer(m_Device->device(), m_Device->graphicsQueue(), m_Device->getCommandPool(), imageStagingBuffer, texImage, width, height);
 
 	// Transition image to be shader readable for shader usage
-	transitionImageLayout(m_Device->device(), m_Device->graphicsQueue(), graphicsCommandPool,
+	transitionImageLayout(m_Device->device(), m_Device->graphicsQueue(), m_Device->getCommandPool(),
 		texImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
 	// Add texture data to vector for reference
@@ -2467,7 +2469,7 @@ int VulkanRendererNew::createMeshModel(std::string modelFile)
 
 	// Load in all our meshes
 	std::vector<Mesh> modelMeshes = MeshModel::LoadNode(m_Device->getPhysicalDevice(), m_Device->device(),
-		m_Device->graphicsQueue(), graphicsCommandPool, scene->mRootNode, scene, matToTex);
+		m_Device->graphicsQueue(), m_Device->getCommandPool(), scene->mRootNode, scene, matToTex);
 
 	// Create mesh model and add to list
 	MeshModel meshModel = MeshModel(modelMeshes);

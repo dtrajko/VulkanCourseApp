@@ -122,7 +122,7 @@ private:
 	// VkRenderPass renderPass;
 
 	// -- Pools --
-	VkCommandPool graphicsCommandPool;
+	// VkCommandPool graphicsCommandPool;
 
 	// -- Utility
 	// VkFormat swapChainImageFormat;
@@ -148,7 +148,7 @@ private:
 	// void createColorBufferImage();
 	// void createDepthBufferImage();
 	// void createFramebuffers();
-	void createCommandPool();
+	// void createCommandPool();
 	void createCommandBuffers();
 	void createSynchronization();
 	void createTextureSampler();
