@@ -2,6 +2,8 @@
 
 #include "WindowLVE.h"
 
+#include "Utilities.h"
+
 // std lib headers
 #include <string>
 #include <vector>
@@ -14,13 +16,6 @@ struct SwapChainSupportDetails {
     std::vector<VkPresentModeKHR> presentModes;
 };
 
-struct QueueFamilyIndicesLve {
-    uint32_t graphicsFamily;
-    uint32_t presentationFamily;
-    bool graphicsFamilyHasValue = false;
-    bool presentationFamilyHasValue = false;
-    bool isComplete() { return graphicsFamilyHasValue && presentationFamilyHasValue; }
-};
 
 class DeviceLVE {
 public:
@@ -48,7 +43,7 @@ public:
 
     SwapChainSupportDetails getSwapChainSupport() { return querySwapChainSupport(m_PhysicalDevice); }
     uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
-    QueueFamilyIndicesLve findPhysicalQueueFamilies() { return findQueueFamilies(m_PhysicalDevice); }
+    QueueFamilyIndices findPhysicalQueueFamilies() { return findQueueFamilies(m_PhysicalDevice); }
     VkFormat findSupportedFormat(
         const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
 
@@ -85,7 +80,7 @@ private:
     bool isDeviceSuitable(VkPhysicalDevice device);
     std::vector<const char*> getRequiredExtensions();
     bool checkValidationLayerSupport();
-    QueueFamilyIndicesLve findQueueFamilies(VkPhysicalDevice device);
+    QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device);
     void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo);
     void hasGflwRequiredInstanceExtensions();
     bool checkDeviceExtensionSupport(VkPhysicalDevice device);

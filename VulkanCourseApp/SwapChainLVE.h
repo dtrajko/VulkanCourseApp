@@ -53,6 +53,22 @@ private:
         const std::vector<VkPresentModeKHR>& availablePresentModes);
     VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities);
 
+public:
+    struct SwapChainDetails
+    {
+        VkSurfaceCapabilitiesKHR surfaceCapabilities;    // Surface properties, e.g. image size/extent
+        std::vector<VkSurfaceFormatKHR> formats;         // Surface image formats, e.g. RGBA and size of each color
+        std::vector<VkPresentModeKHR> presentationModes; // How images should be presented to screen
+    };
+
+    struct SwapchainImage
+    {
+        VkImage image;
+        VkImageView imageView;
+    };
+
+private:
+
     VkFormat swapChainImageFormat;
     VkExtent2D swapChainExtent;
 
@@ -66,10 +82,10 @@ private:
     std::vector<VkImageView> swapChainImageViews;
 
     std::shared_ptr<DeviceLVE> m_Device;
-    VkExtent2D windowExtent;
+    VkExtent2D m_WindowExtent;
 
     VkSwapchainKHR swapChain;
-    std::shared_ptr<SwapChainLVE> oldSwapChain;
+    std::shared_ptr<SwapChainLVE> m_SwapChainOld;
 
     std::vector<VkSemaphore> imageAvailableSemaphores;
     std::vector<VkSemaphore> renderFinishedSemaphores;

@@ -12,18 +12,18 @@
 #include "Mesh.h"
 #include "MeshModel.h"
 #include "WindowLVE.h"
-#include "SwapChainLVE.h"
+#include "SwapChainVCA.h"
 #include "PipelineLVE.h"
 
 #include <vector>
 
 
-class VulkanRenderer
+class VulkanRendererNew
 {
 public:
-	VulkanRenderer() = delete;
-	VulkanRenderer(std::shared_ptr<WindowLVE> window);
-	~VulkanRenderer();
+	VulkanRendererNew() = delete;
+	VulkanRendererNew(std::shared_ptr<WindowLVE> window);
+	~VulkanRendererNew();
 
 	int init();
 	int createMeshModel(std::string modelFile);
@@ -39,7 +39,7 @@ public:
 private:
 	std::shared_ptr<WindowLVE> m_Window; // lveWindow
 	std::shared_ptr<DeviceLVE> m_Device; // lveDevice
-	std::unique_ptr<SwapChainLVE> m_SwapChain; // lveSwapChain
+	std::unique_ptr<SwapChainVCA> m_SwapChain; // lveSwapChain
 	std::unique_ptr<PipelineLVE> m_Pipeline; // lvePipeline
 
 	int currentFrame = 0;
@@ -68,9 +68,9 @@ private:
 	// VkQueue graphicsQueue;
 	// VkQueue presentationQueue;
 	// VkSurfaceKHR surface;
-	VkSwapchainKHR swapchain;
+	// VkSwapchainKHR swapchain;
 
-	std::vector<SwapChainLVE::SwapchainImage> swapChainImages;
+	// std::vector<SwapChainVCA::SwapchainImage> swapChainImages;
 	std::vector<VkFramebuffer> swapChainFramebuffers;
 	std::vector<VkCommandBuffer> commandBuffers;
 
@@ -125,8 +125,8 @@ private:
 	VkCommandPool graphicsCommandPool;
 
 	// -- Utility
-	VkFormat swapChainImageFormat;
-	VkExtent2D swapChainExtent;
+	// VkFormat swapChainImageFormat;
+	// VkExtent2D swapChainExtent;
 
 	// -- Synchronization
 	std::vector<VkSemaphore> imageAvailable;
@@ -179,8 +179,8 @@ private:
 	bool checkDeviceSuitable(); // VkPhysicalDevice device
 
 	// -- Getter Functions
-	QueueFamilyIndices getQueueFamilies(); // VkPhysicalDevice device
-	SwapChainLVE::SwapChainDetails getSwapChainDetails(); // VkPhysicalDevice device
+	// QueueFamilyIndices getQueueFamilies(); // VkPhysicalDevice device
+	// SwapChainLVE::SwapChainDetails getSwapChainDetails(); // VkPhysicalDevice device
 
 	// -- Choose Functions
 	VkSurfaceFormatKHR chooseBestSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& formats);

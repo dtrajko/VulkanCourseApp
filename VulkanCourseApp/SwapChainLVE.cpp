@@ -11,18 +11,18 @@
 
 
 SwapChainLVE::SwapChainLVE(std::shared_ptr<DeviceLVE> device, VkExtent2D extent)
-    : m_Device{ device }, windowExtent{ extent }
+    : m_Device{ device }, m_WindowExtent{ extent }
 {
     init();
 }
 
 SwapChainLVE::SwapChainLVE(std::shared_ptr<DeviceLVE> device, VkExtent2D extent, std::shared_ptr<SwapChainLVE> previous)
-    : m_Device{ device }, windowExtent{ extent }, oldSwapChain{ previous }
+    : m_Device{ device }, m_WindowExtent{ extent }, m_SwapChainOld{ previous }
 {
     init();
 
     // clean up old swap chain since it's no longer needed
-    oldSwapChain = nullptr;
+    m_SwapChainOld = nullptr;
 }
 
 void SwapChainLVE::init()
@@ -160,8 +160,8 @@ void SwapChainLVE::createSwapChain()
     createInfo.imageArrayLayers = 1;
     createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
-    QueueFamilyIndicesLve indices = m_Device->findPhysicalQueueFamilies();
-    uint32_t queueFamilyIndices[] = { indices.graphicsFamily, indices.presentationFamily };
+    QueueFamilyIndices indices = m_Device->findPhysicalQueueFamilies();
+    uint32_t queueFamilyIndices[] = { (uint32_t)indices.graphicsFamily, (uint32_t)indices.presentationFamily };
 
     if (indices.graphicsFamily != indices.presentationFamily) {
         createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
@@ -180,7 +180,7 @@ void SwapChainLVE::createSwapChain()
     createInfo.presentMode = presentMode;
     createInfo.clipped = VK_TRUE;
 
-    createInfo.oldSwapchain = oldSwapChain == nullptr ? VK_NULL_HANDLE : oldSwapChain->swapChain;
+    createInfo.oldSwapchain = m_SwapChainOld == nullptr ? VK_NULL_HANDLE : m_SwapChainOld->swapChain;
 
     if (vkCreateSwapchainKHR(m_Device->device(), &createInfo, nullptr, &swapChain) != VK_SUCCESS) {
         throw std::runtime_error("failed to create swap chain!");
@@ -414,7 +414,7 @@ VkExtent2D SwapChainLVE::chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabi
         return capabilities.currentExtent;
     }
     else {
-        VkExtent2D actualExtent = windowExtent;
+        VkExtent2D actualExtent = m_WindowExtent;
         actualExtent.width = std::max(
             capabilities.minImageExtent.width,
             std::min(capabilities.maxImageExtent.width, actualExtent.width));

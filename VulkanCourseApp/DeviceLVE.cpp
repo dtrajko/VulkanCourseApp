@@ -135,10 +135,10 @@ void DeviceLVE::pickPhysicalDevice() {
 }
 
 void DeviceLVE::createLogicalDevice() {
-    QueueFamilyIndicesLve indices = findQueueFamilies(m_PhysicalDevice);
+    QueueFamilyIndices indices = findQueueFamilies(m_PhysicalDevice);
 
     std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
-    std::set<uint32_t> uniqueQueueFamilies = { indices.graphicsFamily, indices.presentationFamily };
+    std::set<uint32_t> uniqueQueueFamilies = { (uint32_t)indices.graphicsFamily, (uint32_t)indices.presentationFamily };
 
     float queuePriority = 1.0f;
     for (uint32_t queueFamily : uniqueQueueFamilies) {
@@ -182,7 +182,7 @@ void DeviceLVE::createLogicalDevice() {
 }
 
 void DeviceLVE::createCommandPool() {
-    QueueFamilyIndicesLve queueFamilyIndices = findPhysicalQueueFamilies();
+    QueueFamilyIndices queueFamilyIndices = findPhysicalQueueFamilies();
 
     VkCommandPoolCreateInfo poolInfo = {};
     poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
@@ -198,7 +198,7 @@ void DeviceLVE::createCommandPool() {
 void DeviceLVE::createSurface() { m_Window->createWindowSurface(instance, &surface_); }
 
 bool DeviceLVE::isDeviceSuitable(VkPhysicalDevice device) {
-    QueueFamilyIndicesLve indices = findQueueFamilies(device);
+    QueueFamilyIndices indices = findQueueFamilies(device);
 
     bool extensionsSupported = checkDeviceExtensionSupport(device);
 
@@ -211,7 +211,7 @@ bool DeviceLVE::isDeviceSuitable(VkPhysicalDevice device) {
     VkPhysicalDeviceFeatures supportedFeatures;
     vkGetPhysicalDeviceFeatures(device, &supportedFeatures);
 
-    return indices.isComplete() && extensionsSupported && swapChainAdequate &&
+    return indices.isValid() && extensionsSupported && swapChainAdequate &&
         supportedFeatures.samplerAnisotropy;
 }
 
@@ -320,8 +320,8 @@ bool DeviceLVE::checkDeviceExtensionSupport(VkPhysicalDevice device) {
     return requiredExtensions.empty();
 }
 
-QueueFamilyIndicesLve DeviceLVE::findQueueFamilies(VkPhysicalDevice device) {
-    QueueFamilyIndicesLve indices;
+QueueFamilyIndices DeviceLVE::findQueueFamilies(VkPhysicalDevice device) {
+    QueueFamilyIndices indices;
 
     uint32_t queueFamilyCount = 0;
     vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
@@ -333,15 +333,13 @@ QueueFamilyIndicesLve DeviceLVE::findQueueFamilies(VkPhysicalDevice device) {
     for (const auto& queueFamily : queueFamilies) {
         if (queueFamily.queueCount > 0 && queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
             indices.graphicsFamily = i;
-            indices.graphicsFamilyHasValue = true;
         }
         VkBool32 presentSupport = false;
         vkGetPhysicalDeviceSurfaceSupportKHR(device, i, surface_, &presentSupport);
         if (queueFamily.queueCount > 0 && presentSupport) {
             indices.presentationFamily = i;
-            indices.presentationFamilyHasValue = true;
         }
-        if (indices.isComplete()) {
+        if (indices.isValid()) {
             break;
         }
 

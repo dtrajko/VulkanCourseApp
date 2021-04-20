@@ -1,4 +1,4 @@
-#include "VulkanRenderer.h"
+#include "VulkanRendererNew.h"
 
 #include "VulkanValidation.h"
 #include "DeviceLVE.h"
@@ -13,12 +13,12 @@
 #include <array>
 
 
-VulkanRenderer::VulkanRenderer(std::shared_ptr<WindowLVE> window)
+VulkanRendererNew::VulkanRendererNew(std::shared_ptr<WindowLVE> window)
 	: m_Window{ window }
 {
 }
 
-int VulkanRenderer::init()
+int VulkanRendererNew::init()
 {
 	try
 	{
@@ -46,7 +46,9 @@ int VulkanRenderer::init()
 		createInputDescriptorSets();
 		createSynchronization();
 
-		uboViewProjection.projection = glm::perspective(glm::radians(45.0f), (float)swapChainExtent.width / (float)swapChainExtent.height, 0.1f, 100.f);
+		float aspectRatio = (float)m_SwapChain->getSwapChainExtent().width / (float)m_SwapChain->getSwapChainExtent().height;
+
+		uboViewProjection.projection = glm::perspective(glm::radians(45.0f), aspectRatio, 0.1f, 100.f);
 		uboViewProjection.view = glm::lookAt(glm::vec3(0.0f, 25.0f, 25.0f), glm::vec3(0.0f, 10.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 
 		// Vulkan inverts Y axis
@@ -64,14 +66,14 @@ int VulkanRenderer::init()
 	return EXIT_SUCCESS;
 }
 
-void VulkanRenderer::updateModel(int modelId, glm::mat4 newModel)
+void VulkanRendererNew::updateModel(int modelId, glm::mat4 newModel)
 {
 	if (modelId >= modelList.size()) return;
 
 	modelList[modelId].setModel(newModel);
 }
 
-void VulkanRenderer::drawFrameLVE()
+void VulkanRendererNew::drawFrameLVE()
 {
 	uint32_t imageIndex;
 	auto result = m_SwapChain->acquireNextImage(&imageIndex);
@@ -100,7 +102,7 @@ void VulkanRenderer::drawFrameLVE()
 	}
 }
 
-void VulkanRenderer::draw()
+void VulkanRendererNew::draw()
 {
 	// CPU/GPU synchronization
 	// Wait for given fence to signal (open) from last draw before continuing
@@ -112,7 +114,7 @@ void VulkanRenderer::draw()
 	// Get index of next image to be drawn to, and signal semaphore when ready to be drawn to
 	// Get next available image to draw to and set something to signal when we're finished with the image (a semaphore)
 	uint32_t imageIndex;
-	vkAcquireNextImageKHR(m_Device->device(), swapchain, std::numeric_limits<uint64_t>::max(), imageAvailable[currentFrame], VK_NULL_HANDLE, &imageIndex);
+	vkAcquireNextImageKHR(m_Device->device(), m_SwapChain->getSwapChainKHR(), std::numeric_limits<uint64_t>::max(), imageAvailable[currentFrame], VK_NULL_HANDLE, &imageIndex);
 
 	recordCommands(imageIndex);
 	updateUniformBuffers(imageIndex);
@@ -149,7 +151,7 @@ void VulkanRenderer::draw()
 	presentInfo.waitSemaphoreCount = 1;                          // Number of semaphores to wait on
 	presentInfo.pWaitSemaphores = &renderFinished[currentFrame]; // List of semaphores to wait on
 	presentInfo.swapchainCount = 1;                              // Number of swapchains to present to
-	presentInfo.pSwapchains = &swapchain;                        // List of swapchains to present to
+	presentInfo.pSwapchains = &m_SwapChain->getSwapChainKHR();   // List of swapchains to present to
 	presentInfo.pImageIndices = &imageIndex;                     // Index of images in swapchain to present
 
 	// Present image
@@ -163,7 +165,7 @@ void VulkanRenderer::draw()
 	currentFrame = (currentFrame + 1) % MAX_FRAME_DRAWS;
 }
 
-void VulkanRenderer::cleanup()
+void VulkanRendererNew::cleanup()
 {
 	// Wait until no actions being run on device before destroying
 	vkDeviceWaitIdle(m_Device->device());
@@ -210,7 +212,7 @@ void VulkanRenderer::cleanup()
 	vkDestroyDescriptorSetLayout(m_Device->device(), samplerSetLayout, nullptr);
 	vkDestroyDescriptorSetLayout(m_Device->device(), inputSetLayout, nullptr);
 
-	for (size_t i = 0; i < swapChainImages.size(); i++)
+	for (size_t i = 0; i < m_SwapChain->getSwapChainImages().size(); i++)
 	{
 		vkDestroyBuffer(m_Device->device(), vpUniformBuffer[i], nullptr);
 		vkFreeMemory(m_Device->device(), vpUniformBufferMemory[i], nullptr);
@@ -239,12 +241,12 @@ void VulkanRenderer::cleanup()
 	vkDestroyPipelineLayout(m_Device->device(), secondPipelineLayout, nullptr);
 
 	vkDestroyRenderPass(m_Device->device(), renderPass, nullptr);
-	for (auto& image : swapChainImages)
+	for (auto& image : m_SwapChain->getSwapChainImages())
 	{
 		vkDestroyImageView(m_Device->device(), image.imageView, nullptr);
 	}
 
-	vkDestroySwapchainKHR(m_Device->device(), swapchain, nullptr);
+	vkDestroySwapchainKHR(m_Device->device(), m_SwapChain->getSwapChainKHR(), nullptr);
 	// vkDestroySurfaceKHR(instance, m_Device->surface(), nullptr);
 	// vkDestroyDevice(m_Device->device(), nullptr);
 	if (validationEnabled)
@@ -252,12 +254,12 @@ void VulkanRenderer::cleanup()
 	// vkDestroyInstance(instance, nullptr);
 }
 
-VulkanRenderer::~VulkanRenderer()
+VulkanRendererNew::~VulkanRendererNew()
 {
 	cleanup();
 }
 
-void VulkanRenderer::createInstance()
+void VulkanRendererNew::createInstance()
 {
 	if (validationEnabled && !checkValidationLayerSupport())
 	{
@@ -335,7 +337,7 @@ void VulkanRenderer::createInstance()
 	printf("Vulkan Instance successfully created.\n");
 }
 
-void VulkanRenderer::createDebugCallback()
+void VulkanRendererNew::createDebugCallback()
 {
 	// Only create callback if validation enabled
 	if (!validationEnabled) return;
@@ -355,7 +357,7 @@ void VulkanRenderer::createDebugCallback()
 	printf("Vulkan Debug Callback successfully created.\n");
 }
 
-void VulkanRenderer::createDevice()
+void VulkanRendererNew::createDevice()
 {
 	m_Device = std::make_shared<DeviceLVE>(m_Window);
 }
@@ -430,8 +432,9 @@ void VulkanRenderer::createSurface()
 }
 ****/
 
-void VulkanRenderer::createSwapChain()
+void VulkanRendererNew::createSwapChain()
 {
+	/****
 	// Get SwapChain details so we can pick best settings
 	SwapChainLVE::SwapChainDetails swapChainDetails = getSwapChainDetails();
 
@@ -525,9 +528,10 @@ void VulkanRenderer::createSwapChain()
 		// Add to swapchain image list
 		swapChainImages.push_back(swapChainImage);
 	}
+	****/
 }
 
-void VulkanRenderer::createRenderPass()
+void VulkanRendererNew::createRenderPass()
 {
 	// Array of our subpasses
 	std::array<VkSubpassDescription, 2> subpasses = {};
@@ -588,7 +592,7 @@ void VulkanRenderer::createRenderPass()
 
 	// -- -- Swapchain Color Attachment
 	VkAttachmentDescription swapchainColorAttachment = {};
-	swapchainColorAttachment.format = swapChainImageFormat;                     // Format to use for attachment
+	swapchainColorAttachment.format = m_SwapChain->getSwapChainImageFormat();   // Format to use for attachment
 	swapchainColorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;                   // Number of samples to write for multisampling
 	swapchainColorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;              // Describes what to do with attachment before rendering
 	swapchainColorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;            // Describes what to do with attachment after rendering
@@ -679,7 +683,7 @@ void VulkanRenderer::createRenderPass()
 	printf("Vulkan Render Pass successfully created.\n");
 }
 
-void VulkanRenderer::createDescriptorSetLayout()
+void VulkanRendererNew::createDescriptorSetLayout()
 {
 	// UNIFORM VALUES DESCRIPTOR SET LAYOUT
 	// UboViewProjection Binding Info
@@ -776,7 +780,7 @@ void VulkanRenderer::createDescriptorSetLayout()
 	printf("Vulkan Descriptor Set Layout (Input Attachments) successfully created.\n");
 }
 
-void VulkanRenderer::createPushConstantRange()
+void VulkanRendererNew::createPushConstantRange()
 {
 	// Define push constant values (no 'create' needed!)
 	pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT; // Shader stage push constant will go to
@@ -784,7 +788,7 @@ void VulkanRenderer::createPushConstantRange()
 	pushConstantRange.size = sizeof(Model);                    // Size of data being passed
 }
 
-void VulkanRenderer::createGraphicsPipeline()
+void VulkanRendererNew::createGraphicsPipeline()
 {
 	// Read in SPIR-V code of shaders
 	auto vertexShaderCode = readFile("Shaders/vert.spv");
@@ -861,17 +865,17 @@ void VulkanRenderer::createGraphicsPipeline()
 	// -- VIEWPORT & SCISSOR (think of GoldenEye 007 Nintendo 64) --
 	// Create a viewport info struct
 	VkViewport viewport = {};
-	viewport.x = 0.0f;                               // x start coordinate
-	viewport.y = 0.0f;                               // y start coordinate
-	viewport.width  = (float)swapChainExtent.width;  // width of viewport
-	viewport.height = (float)swapChainExtent.height; // height of viewport
-	viewport.minDepth = 0.0f;                        // min framebuffer depth
-	viewport.maxDepth = 1.0f;                        // max framebuffer depth
+	viewport.x = 0.0f;                                                 // x start coordinate
+	viewport.y = 0.0f;                                                 // y start coordinate
+	viewport.width  = (float)m_SwapChain->getSwapChainExtent().width;  // width of viewport
+	viewport.height = (float)m_SwapChain->getSwapChainExtent().height; // height of viewport
+	viewport.minDepth = 0.0f;                                          // min framebuffer depth
+	viewport.maxDepth = 1.0f;                                          // max framebuffer depth
 
 	// Create a scissor info struct
 	VkRect2D scissor = {};
-	scissor.offset = { 0, 0 };        // Offset to use region from
-	scissor.extent = swapChainExtent; // Extent to describe region to use, starting at offset
+	scissor.offset = { 0, 0 };                          // Offset to use region from
+	scissor.extent = m_SwapChain->getSwapChainExtent(); // Extent to describe region to use, starting at offset
 
 	VkPipelineViewportStateCreateInfo viewportStateCreateInfo = {};
 	viewportStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
@@ -1061,12 +1065,12 @@ void VulkanRenderer::createGraphicsPipeline()
 	vkDestroyShaderModule(m_Device->device(), secondFragmentShaderModule, nullptr);
 }
 
-void VulkanRenderer::createColorBufferImage()
+void VulkanRendererNew::createColorBufferImage()
 {
 	// Resize supported format for color attachment
-	colorBufferImages.resize(swapChainImages.size());
-	colorBufferImageMemory.resize(swapChainImages.size());
-	colorBufferImageViews.resize(swapChainImages.size());
+	colorBufferImages.resize(m_SwapChain->getSwapChainImages().size());
+	colorBufferImageMemory.resize(m_SwapChain->getSwapChainImages().size());
+	colorBufferImageViews.resize(m_SwapChain->getSwapChainImages().size());
 
 	// Get supported format for color attachment
 	VkFormat colorBufferImageFormat = chooseSupportedFormat(
@@ -1074,10 +1078,10 @@ void VulkanRenderer::createColorBufferImage()
 		VK_IMAGE_TILING_OPTIMAL,
 		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
-	for (size_t i = 0; i < swapChainImages.size(); i++)
+	for (size_t i = 0; i < m_SwapChain->getSwapChainImages().size(); i++)
 	{
 		// Create Color Buffer Image
-		colorBufferImages[i] = createImage(swapChainExtent.width, swapChainExtent.height, colorBufferImageFormat, 
+		colorBufferImages[i] = createImage(m_SwapChain->getSwapChainExtent().width, m_SwapChain->getSwapChainExtent().height, colorBufferImageFormat, 
 			VK_IMAGE_TILING_OPTIMAL,
 			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT,
 			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
@@ -1088,11 +1092,11 @@ void VulkanRenderer::createColorBufferImage()
 	}
 }
 
-void VulkanRenderer::createDepthBufferImage()
+void VulkanRendererNew::createDepthBufferImage()
 {
-	depthBufferImages.resize(swapChainImages.size());
-	depthBufferImageMemory.resize(swapChainImages.size());
-	depthBufferImageViews.resize(swapChainImages.size());
+	depthBufferImages.resize(m_SwapChain->getSwapChainImages().size());
+	depthBufferImageMemory.resize(m_SwapChain->getSwapChainImages().size());
+	depthBufferImageViews.resize(m_SwapChain->getSwapChainImages().size());
 
 	// Get supported format for depth buffer
 	VkFormat depthBufferImageFormat = chooseSupportedFormat(
@@ -1100,10 +1104,10 @@ void VulkanRenderer::createDepthBufferImage()
 		VK_IMAGE_TILING_OPTIMAL,
 		VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
 
-	for (size_t i = 0; i < swapChainImages.size(); i++)
+	for (size_t i = 0; i < m_SwapChain->getSwapChainImages().size(); i++)
 	{
 		// Create Depth Buffer Image
-		depthBufferImages[i] = createImage(swapChainExtent.width, swapChainExtent.height, depthBufferImageFormat,
+		depthBufferImages[i] = createImage(m_SwapChain->getSwapChainExtent().width, m_SwapChain->getSwapChainExtent().height, depthBufferImageFormat,
 			VK_IMAGE_TILING_OPTIMAL,
 			VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT,
 			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
@@ -1114,17 +1118,17 @@ void VulkanRenderer::createDepthBufferImage()
 	}
 }
 
-void VulkanRenderer::createFramebuffers()
+void VulkanRendererNew::createFramebuffers()
 {
 	// Resize framebuffer count to equal swapchain image count
-	swapChainFramebuffers.resize(swapChainImages.size());
+	swapChainFramebuffers.resize(m_SwapChain->getSwapChainImages().size());
 
 	// Create a framebuffer for each swapchain image
-	for (size_t i = 0; i < swapChainImages.size(); i++)
+	for (size_t i = 0; i < m_SwapChain->getSwapChainImages().size(); i++)
 	{
 		std::array<VkImageView, 3> attachments =
 		{
-			swapChainImages[i].imageView,
+			m_SwapChain->getSwapChainImages()[i].imageView,
 			colorBufferImageViews[i],
 			depthBufferImageViews[i],
 		};
@@ -1134,8 +1138,8 @@ void VulkanRenderer::createFramebuffers()
 		framebufferCreateInfo.renderPass = renderPass;           // Render Pass layout the Framebuffer will be used with
 		framebufferCreateInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
 		framebufferCreateInfo.pAttachments = attachments.data(); // List of attachments (1:1 with Render Pass)
-		framebufferCreateInfo.width = swapChainExtent.width;     // Framebuffer width
-		framebufferCreateInfo.height = swapChainExtent.height;   // Framebuffer height
+		framebufferCreateInfo.width = m_SwapChain->getSwapChainExtent().width;     // Framebuffer width
+		framebufferCreateInfo.height = m_SwapChain->getSwapChainExtent().height;   // Framebuffer height
 		framebufferCreateInfo.layers = 1;                        // Framebuffer layers
 
 		VkResult result = vkCreateFramebuffer(m_Device->device(), &framebufferCreateInfo, nullptr, &swapChainFramebuffers[i]);
@@ -1149,10 +1153,10 @@ void VulkanRenderer::createFramebuffers()
 	}
 }
 
-void VulkanRenderer::createCommandPool()
+void VulkanRendererNew::createCommandPool()
 {
 	// Get indices of queue families from device
-	QueueFamilyIndices queueFamilyIndices = getQueueFamilies();
+	QueueFamilyIndices queueFamilyIndices = m_Device->findPhysicalQueueFamilies();
 
 	VkCommandPoolCreateInfo poolInfo = {};
 	poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
@@ -1170,7 +1174,7 @@ void VulkanRenderer::createCommandPool()
 	printf("Vulkan Graphics Command Pool successfully created.\n");
 }
 
-void VulkanRenderer::createCommandBuffers()
+void VulkanRendererNew::createCommandBuffers()
 {
 	// Resize command buffer count to have one for each framebuffer
 	commandBuffers.resize(swapChainFramebuffers.size());
@@ -1197,7 +1201,7 @@ void VulkanRenderer::createCommandBuffers()
 	printf("Vulkan Command Buffers successfully allocated from the Command Pool.\n");
 }
 
-void VulkanRenderer::createUniformBuffers()
+void VulkanRendererNew::createUniformBuffers()
 {
 	// UboViewProjection buffer size
 	VkDeviceSize vpBufferSize = sizeof(UboViewProjection);
@@ -1206,14 +1210,14 @@ void VulkanRenderer::createUniformBuffers()
 	// VkDeviceSize modelBufferSize = modelUniformAlignment * MAX_OBJECTS;
 
 	// One uniform buffer for each image (and by extension, command buffer)
-	vpUniformBuffer.resize(swapChainImages.size());
-	vpUniformBufferMemory.resize(swapChainImages.size());
+	vpUniformBuffer.resize(m_SwapChain->getSwapChainImages().size());
+	vpUniformBufferMemory.resize(m_SwapChain->getSwapChainImages().size());
 
 	// modelDynUniformBuffer.resize(swapChainImages.size());
 	// modelDynUniformBufferMemory.resize(swapChainImages.size());
 
 	// Create Uniform buffer
-	for (size_t i = 0; i < swapChainImages.size(); i++)
+	for (size_t i = 0; i < m_SwapChain->getSwapChainImages().size(); i++)
 	{
 		VkBufferUsageFlags bufferUsage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
 		VkMemoryPropertyFlags bufferProperties = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
@@ -1224,7 +1228,7 @@ void VulkanRenderer::createUniformBuffers()
 	}
 }
 
-void VulkanRenderer::createDescriptorPool()
+void VulkanRendererNew::createDescriptorPool()
 {
 	// CREATE UNIFORM DESCRIPTOR POOL
 
@@ -1246,9 +1250,9 @@ void VulkanRenderer::createDescriptorPool()
 	// Data to create Descriptor Pool
 	VkDescriptorPoolCreateInfo poolCreateInfo = {};
 	poolCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-	poolCreateInfo.maxSets = static_cast<uint32_t>(swapChainImages.size());           // Maximum number of Descriptor Sets that can be created from pool
-	poolCreateInfo.poolSizeCount = static_cast<uint32_t>(descriptorPoolSizes.size()); // Amount of Pool Sizes being passed
-	poolCreateInfo.pPoolSizes = descriptorPoolSizes.data();                           // Pool SIzes to create pool with
+	poolCreateInfo.maxSets = static_cast<uint32_t>(m_SwapChain->getSwapChainImages().size()); // Maximum number of Descriptor Sets that can be created from pool
+	poolCreateInfo.poolSizeCount = static_cast<uint32_t>(descriptorPoolSizes.size());         // Amount of Pool Sizes being passed
+	poolCreateInfo.pPoolSizes = descriptorPoolSizes.data();                                   // Pool SIzes to create pool with
 
 	// Create Descriptor Pool
 	VkResult result = vkCreateDescriptorPool(m_Device->device(), &poolCreateInfo, nullptr, &descriptorPool);
@@ -1298,7 +1302,7 @@ void VulkanRenderer::createDescriptorPool()
 	// Create input attachment pool
 	VkDescriptorPoolCreateInfo inputPoolCreateInfo = {};
 	inputPoolCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-	inputPoolCreateInfo.maxSets = static_cast<uint32_t>(swapChainImages.size());
+	inputPoolCreateInfo.maxSets = static_cast<uint32_t>(m_SwapChain->getSwapChainImages().size());
 	inputPoolCreateInfo.poolSizeCount = static_cast<uint32_t>(inputPoolSizes.size());
 	inputPoolCreateInfo.pPoolSizes = inputPoolSizes.data();
 
@@ -1312,19 +1316,19 @@ void VulkanRenderer::createDescriptorPool()
 	printf("Vulkan Descriptor Pool (Input Attachments) successfully created.\n");
 }
 
-void VulkanRenderer::createDescriptorSets()
+void VulkanRendererNew::createDescriptorSets()
 {
 	// Resize Descriptor Set list so one for every buffer
-	descriptorSets.resize(swapChainImages.size());
+	descriptorSets.resize(m_SwapChain->getSwapChainImages().size());
 
-	std::vector<VkDescriptorSetLayout> setLayouts(swapChainImages.size(), descriptorSetLayout);
+	std::vector<VkDescriptorSetLayout> setLayouts(m_SwapChain->getSwapChainImages().size(), descriptorSetLayout);
 
 	// Descriptor Set Allocation Info
 	VkDescriptorSetAllocateInfo setAllocInfo = {};
 	setAllocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-	setAllocInfo.descriptorPool = descriptorPool;                                    // Pool to allocate Descriptor Set from
-	setAllocInfo.descriptorSetCount = static_cast<uint32_t>(swapChainImages.size()); // Number of sets to allocate
-	setAllocInfo.pSetLayouts = setLayouts.data();                                    // Layouts to use to allocate sets (1:1 relationship)
+	setAllocInfo.descriptorPool = descriptorPool;                                                      // Pool to allocate Descriptor Set from
+	setAllocInfo.descriptorSetCount = static_cast<uint32_t>(m_SwapChain->getSwapChainImages().size()); // Number of sets to allocate
+	setAllocInfo.pSetLayouts = setLayouts.data();                                                      // Layouts to use to allocate sets (1:1 relationship)
 
 	// Allocate descriptor sets
 	VkResult result = vkAllocateDescriptorSets(m_Device->device(), &setAllocInfo, descriptorSets.data());
@@ -1338,7 +1342,7 @@ void VulkanRenderer::createDescriptorSets()
 
 	// Update all of descriptor set buffer bindings
 	// Connect descriptorSets and uniformBuffer(s)
-	for (size_t i = 0; i < swapChainImages.size(); i++)
+	for (size_t i = 0; i < m_SwapChain->getSwapChainImages().size(); i++)
 	{
 		// VIEW PROJECTION DESCRIPTOR UboViewProjection
 		// Buffer info and data offset info
@@ -1381,19 +1385,19 @@ void VulkanRenderer::createDescriptorSets()
 	}
 }
 
-void VulkanRenderer::createInputDescriptorSets()
+void VulkanRendererNew::createInputDescriptorSets()
 {
 	// Resize array to hold descriptor set for each swap chain image
-	inputDescriptorSets.resize(swapChainImages.size());
+	inputDescriptorSets.resize(m_SwapChain->getSwapChainImages().size());
 
 	// Fill array of layouts ready for set creation
-	std::vector<VkDescriptorSetLayout> setLayouts(swapChainImages.size(), inputSetLayout);
+	std::vector<VkDescriptorSetLayout> setLayouts(m_SwapChain->getSwapChainImages().size(), inputSetLayout);
 
 	// Input Attachment Descriptor Set Allocation Info
 	VkDescriptorSetAllocateInfo setAllocInfo = {};
 	setAllocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
 	setAllocInfo.descriptorPool = inputDescriptorPool;
-	setAllocInfo.descriptorSetCount = static_cast<uint32_t>(swapChainImages.size());
+	setAllocInfo.descriptorSetCount = static_cast<uint32_t>(m_SwapChain->getSwapChainImages().size());
 	setAllocInfo.pSetLayouts = setLayouts.data();
 
 	// Allocate Descriptor Set
@@ -1407,7 +1411,7 @@ void VulkanRenderer::createInputDescriptorSets()
 	printf("Vulkan Descriptor Sets (Input Attachments) successfully allocated from the Descriptor Pool.\n");
 
 	// Update each descriptor set with input attachment
-	for (size_t i = 0; i < swapChainImages.size(); i++)
+	for (size_t i = 0; i < m_SwapChain->getSwapChainImages().size(); i++)
 	{
 		// Color Attachment Descriptor
 		VkDescriptorImageInfo colorAttachmentDescriptor = {};
@@ -1449,7 +1453,7 @@ void VulkanRenderer::createInputDescriptorSets()
 	}
 }
 
-void VulkanRenderer::recreateSwapChainLVE()
+void VulkanRendererNew::recreateSwapChainLVE()
 {
 	auto extent = m_Window->getExtent();
 
@@ -1461,10 +1465,10 @@ void VulkanRenderer::recreateSwapChainLVE()
 	vkDeviceWaitIdle(m_Device->device());
 
 	if (m_SwapChain == nullptr) {
-		m_SwapChain = std::make_unique<SwapChainLVE>(m_Device, extent);
+		m_SwapChain = std::make_unique<SwapChainVCA>(m_Device, extent, nullptr, m_Window);
 	}
 	else {
-		m_SwapChain = std::make_unique<SwapChainLVE>(m_Device, extent, std::move(m_SwapChain));
+		m_SwapChain = std::make_unique<SwapChainVCA>(m_Device, extent, std::move(m_SwapChain), m_Window);
 		freeCommandBuffers();
 		createCommandBuffers();
 	}
@@ -1473,7 +1477,7 @@ void VulkanRenderer::recreateSwapChainLVE()
 	createGraphicsPipeline();
 }
 
-void VulkanRenderer::freeCommandBuffers()
+void VulkanRendererNew::freeCommandBuffers()
 {
 	vkFreeCommandBuffers(
 		m_Device->device(),
@@ -1484,7 +1488,7 @@ void VulkanRenderer::freeCommandBuffers()
 	commandBuffers.clear();
 }
 
-void VulkanRenderer::updateUniformBuffers(uint32_t imageIndex)
+void VulkanRendererNew::updateUniformBuffers(uint32_t imageIndex)
 {
 	// Copy ViewProjection data (UboViewProjection)
 	void* data;
@@ -1505,7 +1509,7 @@ void VulkanRenderer::updateUniformBuffers(uint32_t imageIndex)
 	// vkUnmapMemory(m_Device->device(), modelDynUniformBufferMemory[imageIndex]);
 }
 
-void VulkanRenderer::recordCommands(uint32_t currentImage)
+void VulkanRendererNew::recordCommands(uint32_t currentImage)
 {
 	// Information about how to begin each command buffer
 	VkCommandBufferBeginInfo bufferBeginInfo = {};
@@ -1516,7 +1520,7 @@ void VulkanRenderer::recordCommands(uint32_t currentImage)
 	renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 	renderPassBeginInfo.renderPass = renderPass;             // Render Pass to begin
 	renderPassBeginInfo.renderArea.offset = { 0, 0 };        // Start point of render pass in pixels
-	renderPassBeginInfo.renderArea.extent = swapChainExtent; // Size of region to run render pass on (starting at offset)
+	renderPassBeginInfo.renderArea.extent = m_SwapChain->getSwapChainExtent(); // Size of region to run render pass on (starting at offset)
 
 	std::array<VkClearValue, 3> clearValues = {};
 	clearValues[0].color = { 0.0f, 0.0f, 0.0f, 1.0f };
@@ -1638,7 +1642,7 @@ void VulkanRenderer::recordCommands(uint32_t currentImage)
 	// printf("Command Buffer end recording.\n");
 }
 
-void VulkanRenderer::recordCommandBufferLVE(int imageIndex)
+void VulkanRendererNew::recordCommandBufferLVE(int imageIndex)
 {
 	VkCommandBufferBeginInfo beginInfo{};
 	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -1683,7 +1687,7 @@ void VulkanRenderer::recordCommandBufferLVE(int imageIndex)
 	}
 }
 
-void VulkanRenderer::renderGameObjectsLVE(VkCommandBuffer commandBuffer)
+void VulkanRendererNew::renderGameObjectsLVE(VkCommandBuffer commandBuffer)
 {
 	m_Pipeline->bind(commandBuffer);
 
@@ -1745,7 +1749,7 @@ void VulkanRenderer::getPhysicalDevice()
 }
 ****/
 
-void VulkanRenderer::allocateDynamicBufferTransferSpace()
+void VulkanRendererNew::allocateDynamicBufferTransferSpace()
 {
 	// 0000000100000000 256
 	// 0000000001000000 64
@@ -1765,7 +1769,7 @@ void VulkanRenderer::allocateDynamicBufferTransferSpace()
 	// printf("allocateDynamicBufferTransferSpace: modelUniformAlignment = %i\n", (int)modelUniformAlignment);
 }
 
-bool VulkanRenderer::checkInstanceExtensionSupport(std::vector<const char*>* checkExtensions)
+bool VulkanRendererNew::checkInstanceExtensionSupport(std::vector<const char*>* checkExtensions)
 {
 	// Need to get number of extensions to create array of correct size to hold extensions
 	uint32_t extensionCount = 0;
@@ -1797,7 +1801,7 @@ bool VulkanRenderer::checkInstanceExtensionSupport(std::vector<const char*>* che
 	return true;
 }
 
-bool VulkanRenderer::checkDeviceExtensionSupport()
+bool VulkanRendererNew::checkDeviceExtensionSupport()
 {
 	// Get device extension cout
 	uint32_t extensionCount = 0;
@@ -1835,7 +1839,7 @@ bool VulkanRenderer::checkDeviceExtensionSupport()
 	return true;
 }
 
-bool VulkanRenderer::checkValidationLayerSupport()
+bool VulkanRendererNew::checkValidationLayerSupport()
 {
 	// Get number of validation layers to create vector of appropriate size
 	uint32_t validationLayerCount;
@@ -1872,7 +1876,7 @@ bool VulkanRenderer::checkValidationLayerSupport()
 	return true;
 }
 
-bool VulkanRenderer::checkDeviceSuitable()
+bool VulkanRendererNew::checkDeviceSuitable()
 {
 	// Information about the device itself (ID, name, type, verdor, etc)
 	VkPhysicalDeviceProperties deviceProperties;
@@ -1895,20 +1899,21 @@ bool VulkanRenderer::checkDeviceSuitable()
 	VkPhysicalDeviceFeatures deviceFeatures;
 	vkGetPhysicalDeviceFeatures(m_Device->getPhysicalDevice(), &deviceFeatures);
 
-	QueueFamilyIndices indices = getQueueFamilies();
+	QueueFamilyIndices indices = m_Device->findPhysicalQueueFamilies(); // getQueueFamilies();
 
 	bool extensionsSupported = checkDeviceExtensionSupport();
 
 	bool swapChainValid = false;
 	if (extensionsSupported)
 	{
-		SwapChainLVE::SwapChainDetails swapChainDetails = getSwapChainDetails();
+		SwapChainVCA::SwapChainDetails swapChainDetails = m_SwapChain->getSwapChainDetails();
 		swapChainValid = !swapChainDetails.presentationModes.empty() && !swapChainDetails.formats.empty();
 	}
 
 	return indices.isValid() && extensionsSupported && swapChainValid && deviceFeatures.samplerAnisotropy;
 }
 
+/****
 QueueFamilyIndices VulkanRenderer::getQueueFamilies()
 {
 	QueueFamilyIndices indices;
@@ -1952,7 +1957,9 @@ QueueFamilyIndices VulkanRenderer::getQueueFamilies()
 
 	return indices;
 }
+****/
 
+/****
 SwapChainLVE::SwapChainDetails VulkanRenderer::getSwapChainDetails()
 {
 	SwapChainLVE::SwapChainDetails swapChainDetails;
@@ -1989,7 +1996,9 @@ SwapChainLVE::SwapChainDetails VulkanRenderer::getSwapChainDetails()
 
 	return swapChainDetails;
 }
+****/
 
+/****
 // Best format is subjective, but ours will be:
 // Format:     VK_FORMAT_R8G8B8A8_UNORM (VK_FORMAT_B8G8R8A8_UNORM as backup)
 // colorSpace: VK_COLOR_SPACE_SRGB_NONLINEAR_KHR
@@ -2014,7 +2023,9 @@ VkSurfaceFormatKHR VulkanRenderer::chooseBestSurfaceFormat(const std::vector<VkS
 	// If can't find optimal format, then just return first format
 	return formats[0];
 }
+****/
 
+/****
 VkPresentModeKHR VulkanRenderer::chooseBestPresentationMode(const std::vector<VkPresentModeKHR>& presentationModes)
 {
 	// Look for VK_PRESENT_MODE_MAILBOX_KHR
@@ -2029,7 +2040,9 @@ VkPresentModeKHR VulkanRenderer::chooseBestPresentationMode(const std::vector<Vk
 	// If can't find, use FIFO as Vulkan spec says it must be present
 	return VK_PRESENT_MODE_FIFO_KHR;
 }
+****/
 
+/****
 VkExtent2D VulkanRenderer::chooseSwapExtent(const VkSurfaceCapabilitiesKHR& surfaceCapabilities)
 {
 	// If current extent is at numeric limits, then extent can vary. Otherwise, it is the size of the window
@@ -2059,8 +2072,9 @@ VkExtent2D VulkanRenderer::chooseSwapExtent(const VkSurfaceCapabilitiesKHR& surf
 		return newExtent;
 	}
 }
+****/
 
-VkFormat VulkanRenderer::chooseSupportedFormat(const std::vector<VkFormat>& formats, VkImageTiling tiling, VkFormatFeatureFlags featureFlags)
+VkFormat VulkanRendererNew::chooseSupportedFormat(const std::vector<VkFormat>& formats, VkImageTiling tiling, VkFormatFeatureFlags featureFlags)
 {
 	// Loop through options and find compatible one
 	for (VkFormat format : formats)
@@ -2083,7 +2097,7 @@ VkFormat VulkanRenderer::chooseSupportedFormat(const std::vector<VkFormat>& form
 	throw std::runtime_error("Failed to find a matching format!");
 }
 
-VkImage VulkanRenderer::createImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags useFlags, VkMemoryPropertyFlags propFlags, VkDeviceMemory* imageMemory)
+VkImage VulkanRendererNew::createImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags useFlags, VkMemoryPropertyFlags propFlags, VkDeviceMemory* imageMemory)
 {
 	// CREATE IMAGE
 	// Image Creation Info
@@ -2139,7 +2153,7 @@ VkImage VulkanRenderer::createImage(uint32_t width, uint32_t height, VkFormat fo
 	return image;
 }
 
-VkImageView VulkanRenderer::createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags)
+VkImageView VulkanRendererNew::createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags)
 {
 	VkImageViewCreateInfo viewCreateInfo = {};
 
@@ -2173,7 +2187,7 @@ VkImageView VulkanRenderer::createImageView(VkImage image, VkFormat format, VkIm
 	return imageView;
 }
 
-VkShaderModule VulkanRenderer::createShaderModule(const std::vector<char>& code)
+VkShaderModule VulkanRendererNew::createShaderModule(const std::vector<char>& code)
 {
 	VkShaderModuleCreateInfo shaderModuleCreateInfo = {};
 	shaderModuleCreateInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
@@ -2193,7 +2207,7 @@ VkShaderModule VulkanRenderer::createShaderModule(const std::vector<char>& code)
 	return shaderModule;
 }
 
-void VulkanRenderer::createSynchronization()
+void VulkanRendererNew::createSynchronization()
 {
 	imageAvailable.resize(MAX_FRAME_DRAWS);
 	renderFinished.resize(MAX_FRAME_DRAWS);
@@ -2235,7 +2249,7 @@ void VulkanRenderer::createSynchronization()
 	}
 }
 
-void VulkanRenderer::createTextureSampler()
+void VulkanRendererNew::createTextureSampler()
 {
 	// Sampler Creation Info
 	VkSamplerCreateInfo samplerCreateInfo = {};
@@ -2264,7 +2278,7 @@ void VulkanRenderer::createTextureSampler()
 	printf("Vulkan Texture Sampler successfully created.\n");
 }
 
-int VulkanRenderer::createTextureImage(std::string fileName)
+int VulkanRendererNew::createTextureImage(std::string fileName)
 {
 	// Load image file
 	int width, height;
@@ -2320,7 +2334,7 @@ int VulkanRenderer::createTextureImage(std::string fileName)
 	return (int)textureImages.size() - 1;
 }
 
-int VulkanRenderer::createTexture(std::string fileName)
+int VulkanRendererNew::createTexture(std::string fileName)
 {
 	// Create Texture Image and get its location in array
 	int textureImageLoc = createTextureImage(fileName);
@@ -2336,7 +2350,7 @@ int VulkanRenderer::createTexture(std::string fileName)
 	return descriptorLoc;
 }
 
-int VulkanRenderer::createTextureDescriptor(VkImageView textureImage)
+int VulkanRendererNew::createTextureDescriptor(VkImageView textureImage)
 {
 	VkDescriptorSet descriptorSet;
 
@@ -2383,7 +2397,7 @@ int VulkanRenderer::createTextureDescriptor(VkImageView textureImage)
 	return (int)samplerDescriptorSets.size() - 1;
 }
 
-int VulkanRenderer::createMeshModel(std::string modelFile)
+int VulkanRendererNew::createMeshModel(std::string modelFile)
 {
 	// Import model "scene"
 	Assimp::Importer importer;
@@ -2430,7 +2444,7 @@ int VulkanRenderer::createMeshModel(std::string modelFile)
 	return (int)modelList.size() - 1;
 }
 
-stbi_uc* VulkanRenderer::loadTextureFile(std::string fileName, int* width, int* height, VkDeviceSize* imageSize)
+stbi_uc* VulkanRendererNew::loadTextureFile(std::string fileName, int* width, int* height, VkDeviceSize* imageSize)
 {
 	// Number of channels the image uses
 	int channels;
