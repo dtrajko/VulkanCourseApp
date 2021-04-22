@@ -73,6 +73,7 @@ void VulkanRendererNew::updateModel(int modelId, glm::mat4 newModel)
 	modelList[modelId].setModel(newModel);
 }
 
+/****
 void VulkanRendererNew::drawFrameLVE()
 {
 	uint32_t imageIndex;
@@ -87,7 +88,7 @@ void VulkanRendererNew::drawFrameLVE()
 		throw std::runtime_error("Failed to acquire swap chain image!");
 	}
 
-	recordCommandBufferLVE(imageIndex);
+	// recordCommandBufferLVE(imageIndex);
 
 	result = m_SwapChain->submitCommandBuffers(&commandBuffers[imageIndex], &imageIndex);
 
@@ -101,6 +102,7 @@ void VulkanRendererNew::drawFrameLVE()
 		throw std::runtime_error("Failed to present swap chain image!");
 	}
 }
+****/
 
 void VulkanRendererNew::draw()
 {
@@ -120,6 +122,16 @@ void VulkanRendererNew::draw()
 	updateUniformBuffers(imageIndex);
 
 	result = m_SwapChain->submitCommandBuffers(&commandBuffers[imageIndex], &imageIndex);
+
+	if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || m_Window->wasWindowResized()) {
+		m_Window->resetWindowResizedFlag();
+		recreateSwapChainLVE();
+		return;
+	}
+
+	if (result != VK_SUCCESS) {
+		throw std::runtime_error("Failed to present swap chain image!");
+	}
 
 	/****
 	// CPU/GPU synchronization
@@ -1674,6 +1686,7 @@ void VulkanRendererNew::recordCommands(uint32_t currentImage)
 	// printf("Command Buffer end recording.\n");
 }
 
+/****
 void VulkanRendererNew::recordCommandBufferLVE(int imageIndex)
 {
 	VkCommandBufferBeginInfo beginInfo{};
@@ -1718,12 +1731,13 @@ void VulkanRendererNew::recordCommandBufferLVE(int imageIndex)
 		throw std::runtime_error("Failed to record command buffer (imageIndex = " + std::to_string(imageIndex) + ")!");
 	}
 }
+****/
 
+/****
 void VulkanRendererNew::renderGameObjectsLVE(VkCommandBuffer commandBuffer)
 {
 	m_Pipeline->bind(commandBuffer);
 
-	/****
 	for (auto& obj : m_GameObjectsLVE)
 	{
 		obj.transform2d.rotation = glm::mod(obj.transform2d.rotation + 0.01f, glm::two_pi<float>());
@@ -1744,8 +1758,8 @@ void VulkanRendererNew::renderGameObjectsLVE(VkCommandBuffer commandBuffer)
 		obj.model->bind(commandBuffer);
 		obj.model->draw(commandBuffer);
 	}
-	****/
 }
+****/
 
 /****
 void VulkanRenderer::getPhysicalDevice()

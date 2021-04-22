@@ -32,9 +32,9 @@ public:
 	void cleanup();
 
 	void recreateSwapChainLVE();
-	void recordCommandBufferLVE(int imageIndex);
-	void renderGameObjectsLVE(VkCommandBuffer commandBuffer);
-	void drawFrameLVE();
+	// void recordCommandBufferLVE(int imageIndex);
+	// void renderGameObjectsLVE(VkCommandBuffer commandBuffer);
+	// void drawFrameLVE();
 
 private:
 	std::shared_ptr<WindowLVE> m_Window; // lveWindow
