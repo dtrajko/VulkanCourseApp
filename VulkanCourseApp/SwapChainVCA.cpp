@@ -89,6 +89,8 @@ void SwapChainVCA::init()
     // Create Swapchain
     VkResult result = vkCreateSwapchainKHR(m_Device->device(), &swapChainCreateInfo, nullptr, &m_SwapchainKHR);
 
+    printf("---- vkCreateSwapchainKHR m_SwapchainKHR SwapChainVCA::init()\n");
+
     if (result != VK_SUCCESS)
     {
         throw std::runtime_error("Failed to create a Swapchain!");
@@ -334,6 +336,8 @@ void SwapChainVCA::createFramebuffers()
 
         VkResult result = vkCreateFramebuffer(m_Device->device(), &framebufferCreateInfo, nullptr, &m_SwapChainFramebuffers[i]);
 
+        printf("---- vkCreateFramebuffer m_SwapChainFramebuffers[i] SwapChainVCA::createFramebuffers()\n");
+
         if (result != VK_SUCCESS)
         {
             throw std::runtime_error("Failed to create a Framebuffer!");
@@ -419,6 +423,8 @@ VkImageView SwapChainVCA::createImageView(VkImage image, VkFormat format, VkImag
     // Create image view and return it
     VkImageView imageView;
     VkResult result = vkCreateImageView(m_Device->device(), &viewCreateInfo, nullptr, &imageView);
+
+    printf("---- vkCreateImageView imageView SwapChainVCA::createImageView()\n");
 
     if (result != VK_SUCCESS)
     {
@@ -574,6 +580,8 @@ void SwapChainVCA::createRenderPass()
 
     VkResult result = vkCreateRenderPass(m_Device->device(), &renderPassCreateInfo, nullptr, &m_RenderPass);
 
+    printf("---- vkCreateRenderPass m_RenderPass SwapChainVCA::createRenderPass()\n");
+
     if (result != VK_SUCCESS)
     {
         throw std::runtime_error("Failed to create a Render Pass!");
@@ -651,6 +659,8 @@ VkImage SwapChainVCA::createImage(uint32_t width, uint32_t height, VkFormat form
 
     VkImage image;
     VkResult result = vkCreateImage(m_Device->device(), &imageCreateInfo, nullptr, &image);
+
+    printf("---- vkCreateImage image SwapChainVCA::createImage()\n");
 
     if (result != VK_SUCCESS)
     {

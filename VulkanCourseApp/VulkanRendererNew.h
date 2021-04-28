@@ -30,6 +30,7 @@ public:
 	void updateModel(int modelId, glm::mat4 newModel);
 	void draw();
 	void cleanup();
+	void cleanupOnRecreateSwapChain(); // called in recreateSwapChainLVE
 
 	void recreateSwapChainLVE();
 	// void recordCommandBufferLVE(int imageIndex);
@@ -140,7 +141,7 @@ private:
 	// void createLogicalDevice();
 	// void createSurface();
 	void createDevice();
-	void createSwapChain();
+	// void createSwapChain();
 	// void createRenderPass();
 	void createDescriptorSetLayout();
 	void createPushConstantRange();

@@ -1610,7 +1610,7 @@ void VulkanRenderer::recordCommands(uint32_t currentImage)
 		}
 
 		{
-			// Stard 2nd Subpass
+			// Start 2nd Subpass
 
 			vkCmdNextSubpass(commandBuffers[currentImage], VK_SUBPASS_CONTENTS_INLINE);
 
