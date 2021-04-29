@@ -106,6 +106,8 @@ void DeviceLVE::createInstance() {
         throw std::runtime_error("failed to create instance!");
     }
 
+    printf("---- vkCreateInstance instance DeviceLVE::createInstance()\n");
+
     hasGflwRequiredInstanceExtensions();
 }
 
@@ -177,6 +179,8 @@ void DeviceLVE::createLogicalDevice() {
         throw std::runtime_error("failed to create logical device!");
     }
 
+    printf("---- vkCreateDevice device_ DeviceLVE::createLogicalDevice()\n");
+
     vkGetDeviceQueue(device_, indices.graphicsFamily, 0, &graphicsQueue_);
     vkGetDeviceQueue(device_, indices.presentationFamily, 0, &presentationQueue_);
 }
@@ -193,6 +197,8 @@ void DeviceLVE::createCommandPool() {
     if (vkCreateCommandPool(device_, &poolInfo, nullptr, &commandPool) != VK_SUCCESS) {
         throw std::runtime_error("failed to create command pool!");
     }
+
+    printf("---- vkCreateCommandPool commandPool DeviceLVE::createCommandPool()\n");
 }
 
 void DeviceLVE::createSurface() { m_Window->createWindowSurface(instance, &surface_); }
@@ -421,6 +427,8 @@ void DeviceLVE::createBuffer(
         throw std::runtime_error("failed to create vertex buffer!");
     }
 
+    printf("---- vkCreateBuffer buffer DeviceLVE::createBuffer()\n");
+
     VkMemoryRequirements memRequirements;
     vkGetBufferMemoryRequirements(device_, buffer, &memRequirements);
 
@@ -432,6 +440,8 @@ void DeviceLVE::createBuffer(
     if (vkAllocateMemory(device_, &allocInfo, nullptr, &bufferMemory) != VK_SUCCESS) {
         throw std::runtime_error("failed to allocate vertex buffer memory!");
     }
+
+    printf("---- vkAllocateMemory bufferMemory DeviceLVE::createBuffer()\n");
 
     vkBindBufferMemory(device_, buffer, bufferMemory, 0);
 }
@@ -515,6 +525,8 @@ void DeviceLVE::createImageWithInfo(
     if (vkCreateImage(device_, &imageInfo, nullptr, &image) != VK_SUCCESS) {
         throw std::runtime_error("failed to create image!");
     }
+
+    printf("---- vkCreateImage image DeviceLVE::createImageWithInfo()\n");
 
     VkMemoryRequirements memRequirements;
     vkGetImageMemoryRequirements(device_, image, &memRequirements);

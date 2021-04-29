@@ -203,6 +203,8 @@ void VulkanRenderer::cleanup()
 	// Wait until no actions being run on device before destroying
 	vkDeviceWaitIdle(m_Device->device());
 
+	cleanupOnRecreateSwapChain();
+
 	// _aligned_free(modelTransferSpace);
 
 	for (size_t i = 0; i < modelList.size(); i++)
@@ -238,24 +240,25 @@ void VulkanRenderer::cleanup()
 	//		vkFreeMemory(m_Device->device(), colorBufferImageMemory[i], nullptr);
 	//	}
 
-	vkDestroyDescriptorPool(m_Device->device(), descriptorPool, nullptr);
+	// vkDestroyDescriptorPool(m_Device->device(), descriptorPool, nullptr);           // moved to cleanupOnRecreateSwapChain
 	vkDestroyDescriptorPool(m_Device->device(), samplerDescriptorPool, nullptr);
-	vkDestroyDescriptorPool(m_Device->device(), inputDescriptorPool, nullptr);
-	vkDestroyDescriptorSetLayout(m_Device->device(), descriptorSetLayout, nullptr);
-	vkDestroyDescriptorSetLayout(m_Device->device(), samplerSetLayout, nullptr);
-	vkDestroyDescriptorSetLayout(m_Device->device(), inputSetLayout, nullptr);
+	// vkDestroyDescriptorPool(m_Device->device(), inputDescriptorPool, nullptr);      // moved to cleanupOnRecreateSwapChain
+	// vkDestroyDescriptorSetLayout(m_Device->device(), descriptorSetLayout, nullptr); // moved to cleanupOnRecreateSwapChain
+	// vkDestroyDescriptorSetLayout(m_Device->device(), samplerSetLayout, nullptr);    // moved to cleanupOnRecreateSwapChain
+	// vkDestroyDescriptorSetLayout(m_Device->device(), inputSetLayout, nullptr);      // moved to cleanupOnRecreateSwapChain
 
-	for (size_t i = 0; i < m_SwapChain->getSwapChainImages().size(); i++)
-	{
-		vkDestroyBuffer(m_Device->device(), vpUniformBuffer[i], nullptr);
-		vkFreeMemory(m_Device->device(), vpUniformBufferMemory[i], nullptr);
-
-		// vkDestroyBuffer(m_Device->device(), vpUniformBufferUniVar[i], nullptr);
-		// vkFreeMemory(m_Device->device(), vpUniformBufferMemoryUniVar[i], nullptr);
-
-		// vkDestroyBuffer(m_Device->device(), modelDynUniformBuffer[i], nullptr);
-		// vkFreeMemory(m_Device->device(), modelDynUniformBufferMemory[i], nullptr);
-	}
+	// moved to cleanupOnRecreateSwapChain
+	//	for (size_t i = 0; i < m_SwapChain->getSwapChainImages().size(); i++)
+	//	{
+	//		vkDestroyBuffer(m_Device->device(), vpUniformBuffer[i], nullptr);
+	//		vkFreeMemory(m_Device->device(), vpUniformBufferMemory[i], nullptr);
+	//		
+	//		vkDestroyBuffer(m_Device->device(), vpUniformBufferUniVar[i], nullptr);
+	//		vkFreeMemory(m_Device->device(), vpUniformBufferMemoryUniVar[i], nullptr);
+	//		
+	//		vkDestroyBuffer(m_Device->device(), modelDynUniformBuffer[i], nullptr);
+	//		vkFreeMemory(m_Device->device(), modelDynUniformBufferMemory[i], nullptr);
+	//	}
 
 	//	for (size_t i = 0; i < MAX_FRAME_DRAWS; i++)
 	//	{
@@ -270,18 +273,19 @@ void VulkanRenderer::cleanup()
 	//		vkDestroyFramebuffer(m_Device->device(), framebuffer, nullptr);
 	//	}
 
-	vkDestroyPipeline(m_Device->device(), graphicsPipeline, nullptr);
-	vkDestroyPipelineLayout(m_Device->device(), pipelineLayout, nullptr);
+	//	vkDestroyPipeline(m_Device->device(), graphicsPipeline, nullptr);				// moved to cleanupOnRecreateSwapChain
+	//	vkDestroyPipelineLayout(m_Device->device(), pipelineLayout, nullptr);			// moved to cleanupOnRecreateSwapChain
 
-	vkDestroyPipeline(m_Device->device(), secondPipeline, nullptr);
-	vkDestroyPipelineLayout(m_Device->device(), secondPipelineLayout, nullptr);
+	//	 vkDestroyPipeline(m_Device->device(), secondPipeline, nullptr);				// moved to cleanupOnRecreateSwapChain
+	//	 vkDestroyPipelineLayout(m_Device->device(), secondPipelineLayout, nullptr);	// moved to cleanupOnRecreateSwapChain
 
-	vkDestroyRenderPass(m_Device->device(), m_SwapChain->getRenderPass(), nullptr);
+	//	vkDestroyRenderPass(m_Device->device(), m_SwapChain->getRenderPass(), nullptr);	// moved to cleanupOnRecreateSwapChain
 
-	for (auto& imageView : m_SwapChain->getSwapChainImageViews())
-	{
-		vkDestroyImageView(m_Device->device(), imageView, nullptr);
-	}
+	//	moved to cleanupOnRecreateSwapChain
+	//	for (auto& imageView : m_SwapChain->getSwapChainImageViews())
+	//	{
+	//		vkDestroyImageView(m_Device->device(), imageView, nullptr);
+	//	}
 
 	vkDestroySwapchainKHR(m_Device->device(), m_SwapChain->getSwapChainKHR(), nullptr);
 	// vkDestroySurfaceKHR(instance, m_Device->surface(), nullptr);
@@ -296,6 +300,8 @@ void VulkanRenderer::cleanup()
 void VulkanRenderer::cleanupOnRecreateSwapChain()
 {
 	printf("-------- BEGIN VulkanRenderer::cleanupOnRecreateSwapChain()\n");
+
+	vkDeviceWaitIdle(m_Device->device());
 
 	freeCommandBuffers();
 
@@ -328,6 +334,9 @@ void VulkanRenderer::cleanupOnRecreateSwapChain()
 
 		// vkDestroyBuffer(m_Device->device(), vpUniformBufferUniVar[i], nullptr);
 		// vkFreeMemory(m_Device->device(), vpUniformBufferMemoryUniVar[i], nullptr);
+
+		// vkDestroyBuffer(m_Device->device(), modelDynUniformBuffer[i], nullptr);
+		// vkFreeMemory(m_Device->device(), modelDynUniformBufferMemory[i], nullptr);
 	}
 
 	// VK_OBJECT_TYPE_BUFFER			VkBuffer
