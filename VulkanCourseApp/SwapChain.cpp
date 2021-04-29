@@ -1,4 +1,4 @@
-#include "SwapChainVCA.h"
+#include "SwapChain.h"
 
 #include "Utilities.h"
 
@@ -12,7 +12,7 @@
 #include <stdexcept>
 
 
-SwapChainVCA::SwapChainVCA(std::shared_ptr<DeviceLVE> device, VkExtent2D extent, std::shared_ptr<SwapChainVCA> previous, std::shared_ptr<WindowLVE> window)
+SwapChain::SwapChain(std::shared_ptr<DeviceLVE> device, VkExtent2D extent, std::shared_ptr<SwapChain> previous, std::shared_ptr<WindowLVE> window)
     : m_Device{ device }, m_WindowExtent{ extent }, m_SwapChainOld{ previous }, m_Window{ window }
 {
     init();
@@ -21,7 +21,7 @@ SwapChainVCA::SwapChainVCA(std::shared_ptr<DeviceLVE> device, VkExtent2D extent,
     m_SwapChainOld = nullptr;
 }
 
-void SwapChainVCA::init()
+void SwapChain::init()
 {
     // Get SwapChain details so we can pick best settings
     SwapChainDetails swapChainDetails = getSwapChainDetails();
@@ -89,7 +89,7 @@ void SwapChainVCA::init()
     // Create Swapchain
     VkResult result = vkCreateSwapchainKHR(m_Device->device(), &swapChainCreateInfo, nullptr, &m_SwapchainKHR);
 
-    printf("---- vkCreateSwapchainKHR m_SwapchainKHR SwapChainVCA::init()\n");
+    printf("---- vkCreateSwapchainKHR m_SwapchainKHR SwapChain::init()\n");
 
     if (result != VK_SUCCESS)
     {
@@ -125,7 +125,7 @@ void SwapChainVCA::init()
     createSyncObjects();
 }
 
-VkResult SwapChainVCA::acquireNextImage(uint32_t* imageIndex) {
+VkResult SwapChain::acquireNextImage(uint32_t* imageIndex) {
     vkWaitForFences(
         m_Device->device(),
         1,
@@ -144,7 +144,7 @@ VkResult SwapChainVCA::acquireNextImage(uint32_t* imageIndex) {
     return result;
 }
 
-VkResult SwapChainVCA::submitCommandBuffers(const VkCommandBuffer* buffers, uint32_t* imageIndex)
+VkResult SwapChain::submitCommandBuffers(const VkCommandBuffer* buffers, uint32_t* imageIndex)
 {
     if (m_ImagesInFlight[*imageIndex] != VK_NULL_HANDLE) {
         vkWaitForFences(m_Device->device(), 1, &m_ImagesInFlight[*imageIndex], VK_TRUE, UINT64_MAX);
@@ -195,7 +195,7 @@ VkResult SwapChainVCA::submitCommandBuffers(const VkCommandBuffer* buffers, uint
     return result;
 }
 
-SwapChainVCA::SwapChainDetails SwapChainVCA::getSwapChainDetails()
+SwapChain::SwapChainDetails SwapChain::getSwapChainDetails()
 {
     SwapChainDetails swapChainDetails;
 
@@ -235,7 +235,7 @@ SwapChainVCA::SwapChainDetails SwapChainVCA::getSwapChainDetails()
 // Best format is subjective, but ours will be:
 // Format:     VK_FORMAT_R8G8B8A8_UNORM (VK_FORMAT_B8G8R8A8_UNORM as backup)
 // colorSpace: VK_COLOR_SPACE_SRGB_NONLINEAR_KHR
-VkSurfaceFormatKHR SwapChainVCA::chooseBestSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& formats)
+VkSurfaceFormatKHR SwapChain::chooseBestSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& formats)
 {
     // If only 1 format available and is undefined, then this means ALL formats are available (no restrictions)
     if (formats.size() == 1 && formats[0].format == VK_FORMAT_UNDEFINED)
@@ -257,7 +257,7 @@ VkSurfaceFormatKHR SwapChainVCA::chooseBestSurfaceFormat(const std::vector<VkSur
     return formats[0];
 }
 
-void SwapChainVCA::createColorBufferImage()
+void SwapChain::createColorBufferImage()
 {
     // Resize supported format for color attachment
     m_ColorBufferImages.resize(m_SwapChainImages.size());
@@ -284,7 +284,7 @@ void SwapChainVCA::createColorBufferImage()
     }
 }
 
-void SwapChainVCA::createDepthResources()
+void SwapChain::createDepthResources()
 {
     m_DepthBufferImages.resize(m_SwapChainImages.size());
     m_DepthBufferImageMemorys.resize(m_SwapChainImages.size());
@@ -310,7 +310,7 @@ void SwapChainVCA::createDepthResources()
     }
 }
 
-void SwapChainVCA::createFramebuffers()
+void SwapChain::createFramebuffers()
 {
     // Resize framebuffer count to equal swapchain image count
     m_SwapChainFramebuffers.resize(m_SwapChainImages.size());
@@ -336,7 +336,7 @@ void SwapChainVCA::createFramebuffers()
 
         VkResult result = vkCreateFramebuffer(m_Device->device(), &framebufferCreateInfo, nullptr, &m_SwapChainFramebuffers[i]);
 
-        printf("---- vkCreateFramebuffer m_SwapChainFramebuffers[i] SwapChainVCA::createFramebuffers()\n");
+        printf("---- vkCreateFramebuffer m_SwapChainFramebuffers[i] SwapChain::createFramebuffers()\n");
 
         if (result != VK_SUCCESS)
         {
@@ -347,7 +347,7 @@ void SwapChainVCA::createFramebuffers()
     }
 }
 
-VkPresentModeKHR SwapChainVCA::chooseBestPresentationMode(const std::vector<VkPresentModeKHR>& presentationModes)
+VkPresentModeKHR SwapChain::chooseBestPresentationMode(const std::vector<VkPresentModeKHR>& presentationModes)
 {
     // Look for VK_PRESENT_MODE_MAILBOX_KHR
     for (const auto& presentationMode : presentationModes)
@@ -362,7 +362,7 @@ VkPresentModeKHR SwapChainVCA::chooseBestPresentationMode(const std::vector<VkPr
     return VK_PRESENT_MODE_FIFO_KHR;
 }
 
-VkFormat SwapChainVCA::findDepthFormat()
+VkFormat SwapChain::findDepthFormat()
 {
     return m_Device->findSupportedFormat(
         { VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT },
@@ -370,7 +370,7 @@ VkFormat SwapChainVCA::findDepthFormat()
         VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
 }
 
-VkExtent2D SwapChainVCA::chooseSwapExtent(const VkSurfaceCapabilitiesKHR& surfaceCapabilities)
+VkExtent2D SwapChain::chooseSwapExtent(const VkSurfaceCapabilitiesKHR& surfaceCapabilities)
 {
     // If current extent is at numeric limits, then extent can vary. Otherwise, it is the size of the window
     if (surfaceCapabilities.currentExtent.width != std::numeric_limits<uint32_t>::max())
@@ -400,7 +400,7 @@ VkExtent2D SwapChainVCA::chooseSwapExtent(const VkSurfaceCapabilitiesKHR& surfac
     }
 }
 
-VkImageView SwapChainVCA::createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags)
+VkImageView SwapChain::createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags)
 {
     VkImageViewCreateInfo viewCreateInfo = {};
 
@@ -424,7 +424,7 @@ VkImageView SwapChainVCA::createImageView(VkImage image, VkFormat format, VkImag
     VkImageView imageView;
     VkResult result = vkCreateImageView(m_Device->device(), &viewCreateInfo, nullptr, &imageView);
 
-    printf("---- vkCreateImageView imageView SwapChainVCA::createImageView()\n");
+    printf("---- vkCreateImageView imageView SwapChain::createImageView()\n");
 
     if (result != VK_SUCCESS)
     {
@@ -436,7 +436,7 @@ VkImageView SwapChainVCA::createImageView(VkImage image, VkFormat format, VkImag
     return imageView;
 }
 
-void SwapChainVCA::createRenderPass()
+void SwapChain::createRenderPass()
 {
     // Array of our subpasses
     std::array<VkSubpassDescription, 2> subpasses = {};
@@ -580,7 +580,7 @@ void SwapChainVCA::createRenderPass()
 
     VkResult result = vkCreateRenderPass(m_Device->device(), &renderPassCreateInfo, nullptr, &m_RenderPass);
 
-    printf("---- vkCreateRenderPass m_RenderPass SwapChainVCA::createRenderPass()\n");
+    printf("---- vkCreateRenderPass m_RenderPass SwapChain::createRenderPass()\n");
 
     if (result != VK_SUCCESS)
     {
@@ -590,7 +590,7 @@ void SwapChainVCA::createRenderPass()
     printf("Vulkan Render Pass successfully created.\n");
 }
 
-VkFormat SwapChainVCA::chooseSupportedFormat(const std::vector<VkFormat>& formats, VkImageTiling tiling, VkFormatFeatureFlags featureFlags)
+VkFormat SwapChain::chooseSupportedFormat(const std::vector<VkFormat>& formats, VkImageTiling tiling, VkFormatFeatureFlags featureFlags)
 {
     // Loop through options and find compatible one
     for (VkFormat format : formats)
@@ -613,7 +613,7 @@ VkFormat SwapChainVCA::chooseSupportedFormat(const std::vector<VkFormat>& format
     throw std::runtime_error("Failed to find a matching format!");
 }
 
-void SwapChainVCA::createSyncObjects() {
+void SwapChain::createSyncObjects() {
     m_ImageAvailableSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
     m_RenderFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
     m_InFlightFences.resize(MAX_FRAMES_IN_FLIGHT);
@@ -637,7 +637,7 @@ void SwapChainVCA::createSyncObjects() {
     }
 }
 
-VkImage SwapChainVCA::createImage(uint32_t width, uint32_t height, VkFormat format,
+VkImage SwapChain::createImage(uint32_t width, uint32_t height, VkFormat format,
     VkImageTiling tiling, VkImageUsageFlags useFlags, VkMemoryPropertyFlags propFlags, VkDeviceMemory* imageMemory)
 {
     // CREATE IMAGE
@@ -660,7 +660,7 @@ VkImage SwapChainVCA::createImage(uint32_t width, uint32_t height, VkFormat form
     VkImage image;
     VkResult result = vkCreateImage(m_Device->device(), &imageCreateInfo, nullptr, &image);
 
-    printf("---- vkCreateImage image SwapChainVCA::createImage()\n");
+    printf("---- vkCreateImage image SwapChain::createImage()\n");
 
     if (result != VK_SUCCESS)
     {
@@ -696,7 +696,7 @@ VkImage SwapChainVCA::createImage(uint32_t width, uint32_t height, VkFormat form
     return image;
 }
 
-SwapChainVCA::~SwapChainVCA()
+SwapChain::~SwapChain()
 {
     for (auto semaphore : m_ImageAvailableSemaphores) {
         vkDestroySemaphore(m_Device->device(), semaphore, nullptr);

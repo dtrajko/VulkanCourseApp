@@ -9,7 +9,7 @@
 #include <memory>
 
 
-class SwapChainVCA
+class SwapChain
 {
 public:
     struct SwapChainDetails
@@ -22,8 +22,8 @@ public:
 public:
     static constexpr int MAX_FRAMES_IN_FLIGHT = 2;
 
-    SwapChainVCA(std::shared_ptr<DeviceLVE> device, VkExtent2D extent, std::shared_ptr<SwapChainVCA> previous, std::shared_ptr<WindowLVE> window);
-    ~SwapChainVCA();
+    SwapChain(std::shared_ptr<DeviceLVE> device, VkExtent2D extent, std::shared_ptr<SwapChain> previous, std::shared_ptr<WindowLVE> window);
+    ~SwapChain();
 
     void init();
 
@@ -60,7 +60,7 @@ private:
 private:
     std::shared_ptr<DeviceLVE> m_Device;
     VkExtent2D m_WindowExtent;
-    std::shared_ptr<SwapChainVCA> m_SwapChainOld;
+    std::shared_ptr<SwapChain> m_SwapChainOld;
     std::shared_ptr<WindowLVE> m_Window; // lveWindow
 
     VkSwapchainKHR m_SwapchainKHR;

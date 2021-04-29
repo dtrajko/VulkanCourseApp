@@ -12,35 +12,34 @@
 #include "Mesh.h"
 #include "MeshModel.h"
 #include "WindowLVE.h"
-#include "SwapChainVCA.h"
+#include "SwapChainLVE.h"
 #include "PipelineLVE.h"
 
 #include <vector>
 
 
-class VulkanRendererNew
+class VulkanRendererOriginal
 {
 public:
-	VulkanRendererNew() = delete;
-	VulkanRendererNew(std::shared_ptr<WindowLVE> window);
-	~VulkanRendererNew();
+	VulkanRendererOriginal() = delete;
+	VulkanRendererOriginal(std::shared_ptr<WindowLVE> window);
+	~VulkanRendererOriginal();
 
 	int init();
 	int createMeshModel(std::string modelFile);
 	void updateModel(int modelId, glm::mat4 newModel);
 	void draw();
 	void cleanup();
-	void cleanupOnRecreateSwapChain(); // called in recreateSwapChainLVE
 
 	void recreateSwapChainLVE();
-	// void recordCommandBufferLVE(int imageIndex);
-	// void renderGameObjectsLVE(VkCommandBuffer commandBuffer);
-	// void drawFrameLVE();
+	void recordCommandBufferLVE(int imageIndex);
+	void renderGameObjectsLVE(VkCommandBuffer commandBuffer);
+	void drawFrameLVE();
 
 private:
 	std::shared_ptr<WindowLVE> m_Window; // lveWindow
 	std::shared_ptr<DeviceLVE> m_Device; // lveDevice
-	std::unique_ptr<SwapChainVCA> m_SwapChain; // lveSwapChain
+	std::unique_ptr<SwapChainLVE> m_SwapChain; // lveSwapChain
 	std::unique_ptr<PipelineLVE> m_Pipeline; // lvePipeline
 
 	int currentFrame = 0;
@@ -69,19 +68,19 @@ private:
 	// VkQueue graphicsQueue;
 	// VkQueue presentationQueue;
 	// VkSurfaceKHR surface;
-	// VkSwapchainKHR swapchain;
+	VkSwapchainKHR swapchain;
 
-	// std::vector<SwapChainVCA::SwapchainImage> swapChainImages;
-	// std::vector<VkFramebuffer> swapChainFramebuffers;
+	std::vector<SwapChainLVE::SwapchainImage> swapChainImages;
+	std::vector<VkFramebuffer> swapChainFramebuffers;
 	std::vector<VkCommandBuffer> commandBuffers;
 
-	// std::vector<VkImage> colorBufferImages;
-	// std::vector<VkDeviceMemory> colorBufferImageMemory;
-	// std::vector<VkImageView> colorBufferImageViews;
+	std::vector<VkImage> colorBufferImages;
+	std::vector<VkDeviceMemory> colorBufferImageMemory;
+	std::vector<VkImageView> colorBufferImageViews;
 
-	// std::vector<VkImage> depthBufferImages;
-	// std::vector<VkDeviceMemory> depthBufferImageMemory;
-	// std::vector<VkImageView> depthBufferImageViews;
+	std::vector<VkImage> depthBufferImages;
+	std::vector<VkDeviceMemory> depthBufferImageMemory;
+	std::vector<VkImageView> depthBufferImageViews;
 
 	VkSampler textureSampler;
 
@@ -120,19 +119,19 @@ private:
 	VkPipeline secondPipeline;
 	VkPipelineLayout secondPipelineLayout;
 
-	// VkRenderPass renderPass;
+	VkRenderPass renderPass;
 
 	// -- Pools --
-	// VkCommandPool graphicsCommandPool;
+	VkCommandPool graphicsCommandPool;
 
 	// -- Utility
-	// VkFormat swapChainImageFormat;
-	// VkExtent2D swapChainExtent;
+	VkFormat swapChainImageFormat;
+	VkExtent2D swapChainExtent;
 
 	// -- Synchronization
-	// std::vector<VkSemaphore> imageAvailable;
-	// std::vector<VkSemaphore> renderFinished;
-	// std::vector<VkFence> drawFences;
+	std::vector<VkSemaphore> imageAvailable;
+	std::vector<VkSemaphore> renderFinished;
+	std::vector<VkFence> drawFences;
 
 	// Vulkan Functions
 	// -- Create Functions
@@ -141,17 +140,17 @@ private:
 	// void createLogicalDevice();
 	// void createSurface();
 	void createDevice();
-	// void createSwapChain();
-	// void createRenderPass();
+	void createSwapChain();
+	void createRenderPass();
 	void createDescriptorSetLayout();
 	void createPushConstantRange();
 	void createGraphicsPipeline();
-	// void createColorBufferImage();
-	// void createDepthBufferImage();
-	// void createFramebuffers();
-	// void createCommandPool();
+	void createColorBufferImage();
+	void createDepthBufferImage();
+	void createFramebuffers();
+	void createCommandPool();
 	void createCommandBuffers();
-	// void createSynchronization();
+	void createSynchronization();
 	void createTextureSampler();
 
 	void createUniformBuffers();
@@ -170,18 +169,18 @@ private:
 	// void getPhysicalDevice();
 
 	// -- Allocate Functions
-	// void allocateDynamicBufferTransferSpace();
+	void allocateDynamicBufferTransferSpace();
 
 	// -- Support Functions
 	// -- -- Checker Functions
 	bool checkInstanceExtensionSupport(std::vector<const char*>* checkExtensions);
+	bool checkDeviceExtensionSupport(); // VkPhysicalDevice device
 	bool checkValidationLayerSupport();
-	// bool checkDeviceExtensionSupport(); // VkPhysicalDevice device
-	// bool checkDeviceSuitable(); // VkPhysicalDevice device
+	bool checkDeviceSuitable(); // VkPhysicalDevice device
 
 	// -- Getter Functions
-	// QueueFamilyIndices getQueueFamilies(); // VkPhysicalDevice device
-	// SwapChainLVE::SwapChainDetails getSwapChainDetails(); // VkPhysicalDevice device
+	QueueFamilyIndices getQueueFamilies(); // VkPhysicalDevice device
+	SwapChainLVE::SwapChainDetails getSwapChainDetails(); // VkPhysicalDevice device
 
 	// -- Choose Functions
 	VkSurfaceFormatKHR chooseBestSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& formats);

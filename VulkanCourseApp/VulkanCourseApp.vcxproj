@@ -94,12 +94,12 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="SwapChainVCA.cpp">
+    <ClCompile Include="SwapChain.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="VulkanRendererOriginal.cpp" />
     <ClCompile Include="VulkanRenderer.cpp" />
-    <ClCompile Include="VulkanRendererNew.cpp" />
     <ClCompile Include="WindowLVE.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -110,10 +110,10 @@
     <ClInclude Include="PipelineVCA.h" />
     <ClInclude Include="Shader.h" />
     <ClInclude Include="SwapChainLVE.h" />
-    <ClInclude Include="SwapChainVCA.h" />
+    <ClInclude Include="SwapChain.h" />
     <ClInclude Include="Utilities.h" />
+    <ClInclude Include="VulkanRendererOriginal.h" />
     <ClInclude Include="VulkanRenderer.h" />
-    <ClInclude Include="VulkanRendererNew.h" />
     <ClInclude Include="VulkanValidation.h" />
     <ClInclude Include="WindowLVE.h" />
   </ItemGroup>

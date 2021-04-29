@@ -3,11 +3,25 @@
 layout(input_attachment_index = 0, binding = 0) uniform subpassInput inputColor; // Color output from subpass 1
 layout(input_attachment_index = 1, binding = 1) uniform subpassInput inputDepth; // Depth output from subpass 1
 
+const int ViewportWidth = 1366; // TODO: expose as an uniform variable or a push constant
+
+//	layout (std140, binding = 1) uniform UniformVariables
+//	{
+//		int ViewportWidth;
+//	} uniformVariables;
+
+layout(push_constant) uniform UniformVariables
+{
+	int ViewportWidth;
+} uniformVariables;
+
+
 layout(location = 0) out vec4 color;
 
 void main()
 {
-	int xHalf = 1366 / 2;
+	int xHalf = uniformVariables.ViewportWidth / 2;
+
 	if (gl_FragCoord.x > xHalf)
 	{
 		float lowerBound = 0.98;
