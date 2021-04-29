@@ -14,6 +14,7 @@
 #include "WindowLVE.h"
 #include "SwapChain.h"
 #include "PipelineLVE.h"
+#include "Shader.h"
 
 #include <vector>
 
@@ -38,10 +39,82 @@ public:
 	// void drawFrameLVE();
 
 private:
+	// Vulkan Functions
+	// -- Create Functions
+	void createInstance();
+	void createDebugCallback();
+	// void createLogicalDevice();
+	// void createSurface();
+	void createDevice();
+	// void createSwapChain();
+	// void createRenderPass();
+	void createShaders();
+	void createDescriptorSetLayout();
+	void createPushConstantRange();
+	void createGraphicsPipeline();
+	// void createColorBufferImage();
+	// void createDepthBufferImage();
+	// void createFramebuffers();
+	// void createCommandPool();
+	void createCommandBuffers();
+	// void createSynchronization();
+	void createTextureSampler();
+
+	void createUniformBuffers();
+	void createDescriptorPool();
+	void createDescriptorSets();
+	void createInputDescriptorSets();
+
+	void freeCommandBuffers();
+
+	void updateUniformBuffers(uint32_t imageIndex);
+
+	// -- Record Functions --
+	void recordCommands(uint32_t currentImage);
+
+	// -- Get Functions
+	// void getPhysicalDevice();
+
+	// -- Allocate Functions
+	// void allocateDynamicBufferTransferSpace();
+
+	// -- Support Functions
+	// -- -- Checker Functions
+	bool checkInstanceExtensionSupport(std::vector<const char*>* checkExtensions);
+	bool checkValidationLayerSupport();
+	// bool checkDeviceExtensionSupport(); // VkPhysicalDevice device
+	// bool checkDeviceSuitable(); // VkPhysicalDevice device
+
+	// -- Getter Functions
+	// QueueFamilyIndices getQueueFamilies(); // VkPhysicalDevice device
+	// SwapChainLVE::SwapChainDetails getSwapChainDetails(); // VkPhysicalDevice device
+
+	// -- Choose Functions
+	// VkSurfaceFormatKHR chooseBestSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& formats);
+	// VkPresentModeKHR chooseBestPresentationMode(const std::vector<VkPresentModeKHR>& presentationModes);
+	// VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& surfaceCapabilities);
+	VkFormat chooseSupportedFormat(const std::vector<VkFormat>& formats, VkImageTiling tiling, VkFormatFeatureFlags featureFlags);
+
+	// -- Create Functions
+	VkImage createImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling,
+		VkImageUsageFlags useFlags, VkMemoryPropertyFlags propFlags, VkDeviceMemory* imageMemory);
+	VkImageView createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags);
+	// VkShaderModule createShaderModule(const std::vector<char> &code);
+
+	int createTextureImage(std::string fileName);
+	int createTexture(std::string fileName);
+	int createTextureDescriptor(VkImageView textureImage);
+
+	// -- Loader Functions
+	stbi_uc* loadTextureFile(std::string fileName, int* width, int* height, VkDeviceSize* imageSize);
+
+private:
 	std::shared_ptr<WindowLVE> m_Window; // lveWindow
 	std::shared_ptr<DeviceLVE> m_Device; // lveDevice
 	std::unique_ptr<SwapChain> m_SwapChain; // lveSwapChain
 	std::unique_ptr<PipelineLVE> m_Pipeline; // lvePipeline
+	std::unique_ptr<Shader> m_ShaderFirst;
+	std::unique_ptr<Shader> m_ShaderSecond;
 
 	int currentFrame = 0;
 
@@ -142,73 +215,5 @@ private:
 	// std::vector<VkSemaphore> imageAvailable;
 	// std::vector<VkSemaphore> renderFinished;
 	// std::vector<VkFence> drawFences;
-
-	// Vulkan Functions
-	// -- Create Functions
-	void createInstance();
-	void createDebugCallback();
-	// void createLogicalDevice();
-	// void createSurface();
-	void createDevice();
-	// void createSwapChain();
-	// void createRenderPass();
-	void createDescriptorSetLayout();
-	void createPushConstantRange();
-	void createGraphicsPipeline();
-	// void createColorBufferImage();
-	// void createDepthBufferImage();
-	// void createFramebuffers();
-	// void createCommandPool();
-	void createCommandBuffers();
-	// void createSynchronization();
-	void createTextureSampler();
-
-	void createUniformBuffers();
-	void createDescriptorPool();
-	void createDescriptorSets();
-	void createInputDescriptorSets();
-
-	void freeCommandBuffers();
-
-	void updateUniformBuffers(uint32_t imageIndex);
-
-	// -- Record Functions --
-	void recordCommands(uint32_t currentImage);
-
-	// -- Get Functions
-	// void getPhysicalDevice();
-
-	// -- Allocate Functions
-	// void allocateDynamicBufferTransferSpace();
-
-	// -- Support Functions
-	// -- -- Checker Functions
-	bool checkInstanceExtensionSupport(std::vector<const char*>* checkExtensions);
-	bool checkValidationLayerSupport();
-	// bool checkDeviceExtensionSupport(); // VkPhysicalDevice device
-	// bool checkDeviceSuitable(); // VkPhysicalDevice device
-
-	// -- Getter Functions
-	// QueueFamilyIndices getQueueFamilies(); // VkPhysicalDevice device
-	// SwapChainLVE::SwapChainDetails getSwapChainDetails(); // VkPhysicalDevice device
-
-	// -- Choose Functions
-	// VkSurfaceFormatKHR chooseBestSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& formats);
-	// VkPresentModeKHR chooseBestPresentationMode(const std::vector<VkPresentModeKHR>& presentationModes);
-	// VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& surfaceCapabilities);
-	VkFormat chooseSupportedFormat(const std::vector<VkFormat>& formats, VkImageTiling tiling, VkFormatFeatureFlags featureFlags);
-
-	// -- Create Functions
-	VkImage createImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling,
-		VkImageUsageFlags useFlags, VkMemoryPropertyFlags propFlags, VkDeviceMemory* imageMemory);
-	VkImageView createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags);
-	VkShaderModule createShaderModule(const std::vector<char> &code);
-
-	int createTextureImage(std::string fileName);
-	int createTexture(std::string fileName);
-	int createTextureDescriptor(VkImageView textureImage);
-
-	// -- Loader Functions
-	stbi_uc* loadTextureFile(std::string fileName, int* width, int* height, VkDeviceSize* imageSize);
 
 };

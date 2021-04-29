@@ -9,6 +9,7 @@
 class Shader {
 
 public:
+	Shader() = default;
 	Shader(std::shared_ptr<DeviceLVE> device, const std::string& filepathVertex, const std::string& filepathFragment);
 	~Shader();
 

@@ -6,12 +6,18 @@
 Shader::Shader(std::shared_ptr<DeviceLVE> device, const std::string& filepathVertex, const std::string& filepathFragment)
 	: m_Device{ device }
 {
-    auto secondVertexShaderCode = readFile("Shaders/second_vert.spv");
-    auto secondFragmentShaderCode = readFile("Shaders/second_frag.spv");
+    printf("---- Creating shader [ '%s', '%s' ]\n", filepathVertex.c_str(), filepathFragment.c_str());
 
-    // Build shaders
-    m_ShaderModuleVertex = createShaderModule(secondVertexShaderCode);
-    m_ShaderModuleFragment = createShaderModule(secondFragmentShaderCode);
+    // Read in SPIR-V code of shaders
+    auto vertexShaderCode = readFile(filepathVertex);
+    auto fragmentShaderCode = readFile(filepathFragment);
+
+    // printf("Vulkan SPIR-V shader code successfully loaded.\n");
+
+    // Build Shader Modules to link to Graphics Pipeline
+    // Create Shader Modules
+    m_ShaderModuleVertex = createShaderModule(vertexShaderCode);
+    m_ShaderModuleFragment = createShaderModule(fragmentShaderCode);
 }
 
 Shader::~Shader()

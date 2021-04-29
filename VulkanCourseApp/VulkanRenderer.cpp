@@ -25,6 +25,7 @@ int VulkanRenderer::init()
 		createInstance();
 		createDebugCallback();
 		createDevice();
+		createShaders();
 		// createSurface();
 		// getPhysicalDevice();
 		// createLogicalDevice();
@@ -797,6 +798,12 @@ void VulkanRenderer::createRenderPass()
 }
 ****/
 
+void VulkanRenderer::createShaders()
+{
+	m_ShaderFirst = std::make_unique<Shader>(m_Device, "Shaders/vert.spv", "Shaders/frag.spv");
+	m_ShaderSecond = std::make_unique<Shader>(m_Device, "Shaders/second_vert.spv", "Shaders/second_frag.spv");
+}
+
 void VulkanRenderer::createDescriptorSetLayout()
 {
 	// UNIFORM VALUES DESCRIPTOR SET LAYOUT
@@ -916,29 +923,29 @@ void VulkanRenderer::createPushConstantRange()
 void VulkanRenderer::createGraphicsPipeline()
 {
 	// Read in SPIR-V code of shaders
-	auto vertexShaderCode = readFile("Shaders/vert.spv");
-	auto fragmentShaderCode = readFile("Shaders/frag.spv");
+	// auto vertexShaderCode = readFile("Shaders/vert.spv");
+	// auto fragmentShaderCode = readFile("Shaders/frag.spv");
 
-	printf("Vulkan SPIR-V shader code successfully loaded.\n");
+	// printf("Vulkan SPIR-V shader code successfully loaded.\n");
 
 	// Build Shader Modules to link to Graphics Pipeline
 	// Create Shader Modules
-	VkShaderModule vertexShaderModule = createShaderModule(vertexShaderCode);
-	VkShaderModule fragmentShaderModule = createShaderModule(fragmentShaderCode);
+	// VkShaderModule vertexShaderModule = createShaderModule(vertexShaderCode);
+	// VkShaderModule fragmentShaderModule = createShaderModule(fragmentShaderCode);
 
 	// -- SHADER STAGE CREATION INFORMATION --
 	// Vertex Stage creation information
 	VkPipelineShaderStageCreateInfo vertexShaderCreateInfo = {};
 	vertexShaderCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
 	vertexShaderCreateInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;  // Shader Stage name
-	vertexShaderCreateInfo.module = vertexShaderModule;         // Shader module to be used by stage
+	vertexShaderCreateInfo.module = m_ShaderFirst->getShaderModuleVertex(); // Shader module to be used by stage
 	vertexShaderCreateInfo.pName = "main";                      // Entry point into shader
 
 	// Fragment Stage creation information
 	VkPipelineShaderStageCreateInfo fragmentShaderCreateInfo = {};
 	fragmentShaderCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
 	fragmentShaderCreateInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT; // Shader Stage name
-	fragmentShaderCreateInfo.module = fragmentShaderModule;        // Shader module to be used by stage
+	fragmentShaderCreateInfo.module = m_ShaderFirst->getShaderModuleFragment(); // Shader module to be used by stage
 	fragmentShaderCreateInfo.pName = "main";                       // Entry point into shader
 
 	// Put shader stage creation info into an array
@@ -1134,21 +1141,21 @@ void VulkanRenderer::createGraphicsPipeline()
 	printf("Vulkan Graphics Pipeline (1st Subpass) successfully created.\n");
 
 	// Destroy Shader Modules, no longer needed after Pipeline created
-	vkDestroyShaderModule(m_Device->device(), fragmentShaderModule, nullptr);
-	vkDestroyShaderModule(m_Device->device(), vertexShaderModule,   nullptr);
+	// vkDestroyShaderModule(m_Device->device(), fragmentShaderModule, nullptr);
+	// vkDestroyShaderModule(m_Device->device(), vertexShaderModule,   nullptr);
 
 	// CREATE SECOND SUBPASS PIPELINE
 	// Second subpass shaders
-	auto secondVertexShaderCode   = readFile("Shaders/second_vert.spv");
-	auto secondFragmentShaderCode = readFile("Shaders/second_frag.spv");
+	// auto secondVertexShaderCode   = readFile("Shaders/second_vert.spv");
+	// auto secondFragmentShaderCode = readFile("Shaders/second_frag.spv");
 
 	// Build shaders
-	VkShaderModule secondVertexShaderModule   = createShaderModule(secondVertexShaderCode);
-	VkShaderModule secondFragmentShaderModule = createShaderModule(secondFragmentShaderCode);
+	// VkShaderModule secondVertexShaderModule   = createShaderModule(secondVertexShaderCode);
+	// VkShaderModule secondFragmentShaderModule = createShaderModule(secondFragmentShaderCode);
 
 	// Set new shaders
-	vertexShaderCreateInfo.module = secondVertexShaderModule;
-	fragmentShaderCreateInfo.module = secondFragmentShaderModule;
+	vertexShaderCreateInfo.module = m_ShaderSecond->getShaderModuleVertex();
+	fragmentShaderCreateInfo.module = m_ShaderSecond->getShaderModuleFragment();
 
 	VkPipelineShaderStageCreateInfo secondShaderStages[] = { vertexShaderCreateInfo, fragmentShaderCreateInfo };
 
@@ -1198,8 +1205,8 @@ void VulkanRenderer::createGraphicsPipeline()
 	printf("Vulkan Graphics Pipeline (2nd Subpass) successfully created.\n");
 
 	// Destroy second shader modules
-	vkDestroyShaderModule(m_Device->device(), secondVertexShaderModule, nullptr);
-	vkDestroyShaderModule(m_Device->device(), secondFragmentShaderModule, nullptr);
+	// vkDestroyShaderModule(m_Device->device(), secondVertexShaderModule, nullptr);
+	// vkDestroyShaderModule(m_Device->device(), secondFragmentShaderModule, nullptr);
 }
 
 /****
@@ -2422,6 +2429,7 @@ VkImageView VulkanRenderer::createImageView(VkImage image, VkFormat format, VkIm
 	return imageView;
 }
 
+/****
 VkShaderModule VulkanRenderer::createShaderModule(const std::vector<char>& code)
 {
 	VkShaderModuleCreateInfo shaderModuleCreateInfo = {};
@@ -2443,6 +2451,7 @@ VkShaderModule VulkanRenderer::createShaderModule(const std::vector<char>& code)
 
 	return shaderModule;
 }
+****/
 
 /****
 void VulkanRenderer::createSynchronization()
