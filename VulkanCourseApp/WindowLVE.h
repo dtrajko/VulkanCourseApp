@@ -25,6 +25,16 @@ public:
 
 	GLFWwindow* getHandle() { return m_WindowHandle; }
 
+	// from MoravaEngine/src/Platform/Windows/WindowsWindow.cpp
+	static bool* getKeys() { return s_Keys; };
+	static bool* getMouseButtons() { return s_Buttons; };
+
+	static float getChangeX();
+	static float getChangeY();
+
+	static float getMouseScrollOffsetX();
+	static float getMouseScrollOffsetY();
+
 private:
 	static void framebufferResizeCallback(GLFWwindow* windowHandle, int width, int height);
 	void initWindow();
@@ -35,5 +45,18 @@ private:
 	bool m_FramebufferResized = false;
 	std::string m_Title;
 	GLFWwindow* m_WindowHandle;
+
+	static bool s_Keys[1024];
+	static bool s_Buttons[32];
+
+	static bool s_Keys_prev[1024];
+	static bool s_Buttons_prev[32];
+
+	static float s_ChangeX;
+	static float s_ChangeY;
+	static float s_CursorIgnoreLimit;
+
+	static float s_MouseScrollOffsetX;
+	static float s_MouseScrollOffsetY;
 
 };

@@ -10,13 +10,19 @@
 
 #include "WindowLVE.h"
 #include "VulkanRenderer.h"
+#include "CameraController.h"
 
 std::shared_ptr<WindowLVE> window;
 std::unique_ptr<VulkanRenderer> vulkanRenderer;
 
+std::shared_ptr<Camera> camera;
+std::unique_ptr<CameraController> cameraController;
+
 void initWindow(std::string wName = "Vulkan Renderer", const int width = 1280, const int height = 720)
 {
 	window = std::make_shared<WindowLVE>(width, height, wName);
+	camera = std::make_shared<Camera>(glm::vec3(0.0f, 10.0f, 40.0f), glm::vec3(0.0f, 1.0f, 0.0f), -90.0f, 0.0f);
+	cameraController = std::make_unique<CameraController>(camera, 1.778f, 4.0f, 0.1f);
 }
 
 int main()
@@ -62,6 +68,10 @@ int main()
 
 		vulkanRenderer->updateModel(meshId1, modelMat1);
 		vulkanRenderer->updateModel(meshId2, modelMat2);
+
+		camera->OnUpdate(deltaTime);
+		cameraController->Update(deltaTime, window->getHandle());
+		vulkanRenderer->update(deltaTime, camera);
 
 		vulkanRenderer->draw();
 	}

@@ -83,6 +83,8 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Camera.cpp" />
+    <ClCompile Include="CameraController.cpp" />
     <ClCompile Include="DeviceLVE.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Mesh.cpp" />
@@ -101,11 +103,17 @@
     <ClCompile Include="VulkanRendererOriginal.cpp" />
     <ClCompile Include="VulkanRenderer.cpp" />
     <ClCompile Include="WindowLVE.cpp" />
+    <ClCompile Include="WindowsInput.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Camera.h" />
+    <ClInclude Include="CameraController.h" />
     <ClInclude Include="DeviceLVE.h" />
+    <ClInclude Include="Input.h" />
+    <ClInclude Include="KeyCodes.h" />
     <ClInclude Include="Mesh.h" />
     <ClInclude Include="MeshModel.h" />
+    <ClInclude Include="MouseCodes.h" />
     <ClInclude Include="PipelineLVE.h" />
     <ClInclude Include="PipelineVCA.h" />
     <ClInclude Include="Shader.h" />

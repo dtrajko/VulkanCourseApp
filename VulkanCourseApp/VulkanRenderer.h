@@ -15,6 +15,7 @@
 #include "SwapChain.h"
 #include "PipelineLVE.h"
 #include "Shader.h"
+#include "Camera.h"
 
 #include <vector>
 
@@ -29,6 +30,7 @@ public:
 	int init();
 	int createMeshModel(std::string modelFile);
 	void updateModel(int modelId, glm::mat4 newModel);
+	void update(float deltaTime, std::shared_ptr<Camera> camera);
 	void draw();
 	void cleanup();
 	void cleanupOnRecreateSwapChain(); // called in recreateSwapChainLVE

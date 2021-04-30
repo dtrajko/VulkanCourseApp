@@ -1998,13 +1998,13 @@ VkSurfaceFormatKHR VulkanRendererOriginal::chooseBestSurfaceFormat(const std::ve
 	// If only 1 format available and is undefined, then this means ALL formats are available (no restrictions)
 	if (formats.size() == 1 && formats[0].format == VK_FORMAT_UNDEFINED)
 	{
-		return { VK_FORMAT_R8G8B8A8_UNORM, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR };
+		return { VK_FORMAT_R8G8B8A8_UNORM, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR }; // VK_FORMAT_R8G8B8A8_UNORM, VK_FORMAT_B8G8R8A8_UNORM
 	}
 
 	// If restricted, search for optimal format
 	for (const auto& format : formats)
 	{
-		if ((format.format == VK_FORMAT_R8G8B8A8_UNORM || format.format == VK_FORMAT_B8G8R8A8_UNORM) && 
+		if ((format.format == VK_FORMAT_R8G8B8A8_UNORM || format.format == VK_FORMAT_B8G8R8A8_UNORM) &&
 			format.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
 		{
 			return format;

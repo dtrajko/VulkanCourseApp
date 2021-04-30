@@ -67,13 +67,6 @@ int VulkanRenderer::init()
 	return EXIT_SUCCESS;
 }
 
-void VulkanRenderer::updateModel(int modelId, glm::mat4 newModel)
-{
-	if (modelId >= modelList.size()) return;
-
-	modelList[modelId].setModel(newModel);
-}
-
 /****
 void VulkanRenderer::drawFrameLVE()
 {
@@ -104,6 +97,20 @@ void VulkanRenderer::drawFrameLVE()
 	}
 }
 ****/
+
+void VulkanRenderer::updateModel(int modelId, glm::mat4 newModel)
+{
+	if (modelId >= modelList.size()) return;
+
+	modelList[modelId].setModel(newModel);
+}
+
+void VulkanRenderer::update(float deltaTime, std::shared_ptr<Camera> camera)
+{
+	uboViewProjection.view = camera->GetViewMatrix();
+	// uboViewProjection.view = glm::translate(uboViewProjection.view, glm::vec3(0, 0, -0.01f));
+	// uboViewProjection.view = glm::lookAt(glm::vec3(0.0f, 25.0f, 25.0f), glm::vec3(0.0f, 10.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+}
 
 void VulkanRenderer::draw()
 {
@@ -471,6 +478,20 @@ void VulkanRenderer::createDebugCallback()
 void VulkanRenderer::createDevice()
 {
 	m_Device = std::make_shared<DeviceLVE>(m_Window);
+
+	printf("---- device.properties.apiVersion: %i\n", m_Device->properties.apiVersion);
+	printf("---- device.properties.deviceName: %s\n", m_Device->properties.deviceName);
+	printf("---- device.properties.deviceType: %i\n", m_Device->properties.deviceType);
+	printf("---- device.properties.driverVersion: %i\n", m_Device->properties.driverVersion);
+	printf("---- device.properties.vendorID: %i\n", m_Device->properties.vendorID);
+	printf("---- device.properties.limits.maxPushConstantsSize: %i\n", m_Device->properties.limits.maxPushConstantsSize);
+	printf("---- device.properties.limits.maxBoundDescriptorSets: %i\n", m_Device->properties.limits.maxBoundDescriptorSets);
+	printf("---- device.properties.limits.maxColorAttachments: %i\n", m_Device->properties.limits.maxColorAttachments);
+	printf("---- device.properties.limits.maxDescriptorSetInputAttachments: %i\n", m_Device->properties.limits.maxDescriptorSetInputAttachments);
+	printf("---- device.properties.limits.maxDescriptorSetSampledImages: %i\n", m_Device->properties.limits.maxDescriptorSetSampledImages);
+	printf("---- device.properties.limits.maxDescriptorSetSamplers: %i\n", m_Device->properties.limits.maxDescriptorSetSamplers);
+	printf("---- device.properties.limits.maxFramebufferWidth: %i\n", m_Device->properties.limits.maxFramebufferWidth);
+	printf("---- device.properties.limits.maxFramebufferHeight: %i\n", m_Device->properties.limits.maxFramebufferHeight);
 }
 
 /****
@@ -2557,7 +2578,7 @@ int VulkanRenderer::createTextureImage(std::string fileName)
 	// Create image to hold final texture
 	VkImage texImage;
 	VkDeviceMemory texImageMemory;
-	texImage = createImage(width, height, VK_FORMAT_B8G8R8A8_UNORM, // VK_FORMAT_B8G8R8A8_UNORM, VK_FORMAT_R8G8B8A8_UNORM
+	texImage = createImage(width, height, VK_FORMAT_R8G8B8A8_UNORM, // VK_FORMAT_B8G8R8A8_UNORM, VK_FORMAT_R8G8B8A8_UNORM
 		VK_IMAGE_TILING_OPTIMAL,
 		VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
 		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
@@ -2594,7 +2615,7 @@ int VulkanRenderer::createTexture(std::string fileName)
 	int textureImageLoc = createTextureImage(fileName);
 
 	// Create Image View and add to list
-	VkImageView imageView = createImageView(textureImages[textureImageLoc], VK_FORMAT_B8G8R8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT); // VK_FORMAT_R8G8B8A8_UNORM
+	VkImageView imageView = createImageView(textureImages[textureImageLoc], VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT); // VK_FORMAT_B8G8R8A8_UNORM, VK_FORMAT_R8G8B8A8_UNORM
 	textureImageViews.push_back(imageView);
 
 	// Create Texture Descriptor
