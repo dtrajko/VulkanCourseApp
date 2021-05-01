@@ -65,6 +65,7 @@ private:
 
     VkSwapchainKHR m_SwapchainKHR;
     VkFormat m_SwapChainImageFormat;
+    VkFormat m_SwapChainDepthFormat;
     VkExtent2D m_SwapChainExtent;
 
     std::vector<VkFramebuffer> m_SwapChainFramebuffers;
